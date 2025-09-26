@@ -6,8 +6,8 @@ import { Toaster } from "@/components/ui/toaster";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Desempenho de Consultores",
-  description: "Painel de desempenho de consultores",
+  title: "Painel de Desempenho de Consultores",
+  description: "Painel de desempenho de consultores da Agence",
 };
 
 export default function RootLayout({
@@ -16,7 +16,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="pt-BR">
       <body className={`${inter.className} bg-gray-100`}>
         {children}
         <Toaster />
