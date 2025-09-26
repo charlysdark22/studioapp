@@ -8,11 +8,12 @@ interface PerformanceData {
 
 interface RevenuePieChartProps {
   data: PerformanceData[];
+  formatCurrency: (value: number) => string;
 }
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#AF19FF'];
 
-const RevenuePieChart = ({ data }: RevenuePieChartProps) => {
+const RevenuePieChart = ({ data, formatCurrency }: RevenuePieChartProps) => {
   
   const RADIAN = Math.PI / 180;
   const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent, index }: any) => {
@@ -45,7 +46,7 @@ const RevenuePieChart = ({ data }: RevenuePieChartProps) => {
             <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
           ))}
         </Pie>
-        <Tooltip formatter={(value) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(value))} />
+        <Tooltip formatter={(value) => formatCurrency(Number(value))} />
         <Legend />
       </PieChart>
     </ResponsiveContainer>
@@ -53,3 +54,5 @@ const RevenuePieChart = ({ data }: RevenuePieChartProps) => {
 };
 
 export default RevenuePieChart;
+
+    

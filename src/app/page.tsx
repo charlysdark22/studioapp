@@ -60,6 +60,7 @@ export default function Home() {
 
   const [activeChart, setActiveChart] = useState<'bar' | 'pie' | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [hasFetchedData, setHasFetchedData] = useState(false);
 
 
   useEffect(() => {
@@ -87,6 +88,7 @@ export default function Home() {
       return;
     }
     setIsLoading(true);
+    setHasFetchedData(false);
     setActiveChart(null);
     try {
       const request = {
@@ -98,9 +100,11 @@ export default function Home() {
       setTableData(result.tableData);
       setChartData(result.chartData);
       setAverageFixedCost(result.averageFixedCost);
+      setHasFetchedData(true);
     } catch (error) {
       console.error("Error fetching performance data:", error);
       alert("Ocorreu um erro ao buscar os dados.");
+      setHasFetchedData(false);
     } finally {
       setIsLoading(false);
     }
@@ -120,15 +124,11 @@ export default function Home() {
 
 
   const handleShowChart = (type: 'bar' | 'pie') => {
-    if (tableData.length === 0) {
+    if (!hasFetchedData) {
         alert("Por favor, gere um relatório primeiro clicando no botão 'Relatório'.");
         return;
     }
-    if (activeChart === type) {
-      setActiveChart(null);
-    } else {
-      setActiveChart(type);
-    }
+    setActiveChart(prev => prev === type ? null : type);
   };
 
   return (
@@ -214,10 +214,10 @@ export default function Home() {
                <Button onClick={handleFetchData} disabled={isLoading}>
                   {isLoading ? 'Buscando...' : 'Relatório'}
                </Button>
-               <Button onClick={() => handleShowChart('bar')} variant="outline">
+               <Button onClick={() => handleShowChart('bar')} variant={activeChart === 'bar' ? 'default' : 'outline'} disabled={!hasFetchedData || isLoading}>
                   <BarChart /> Gráfico
                </Button>
-                <Button onClick={() => handleShowChart('pie')} variant="outline">
+                <Button onClick={() => handleShowChart('pie')} variant={activeChart === 'pie' ? 'default' : 'outline'} disabled={!hasFetchedData || isLoading}>
                   <PieChart /> Pizza
                </Button>
             </div>
@@ -226,7 +226,7 @@ export default function Home() {
         <div className="bg-white p-4 rounded-b-lg border-l border-r border-b">
            {isLoading ? (
              <div className="text-center py-10 text-gray-500">Carregando dados...</div>
-           ) : tableData.length > 0 ? (
+           ) : hasFetchedData && tableData.length > 0 ? (
              <Table>
                 <TableHeader>
                   <TableRow className="bg-gray-200 hover:bg-gray-200">
@@ -283,12 +283,15 @@ export default function Home() {
               </Table>
            ) : (
              <div className="text-center py-10 text-gray-500">
-               "Por favor, selecione um ou mais consultores e clique em 'Relatório' para ver os resultados."
+               {!hasFetchedData && !isLoading 
+                ? "Por favor, selecione um ou mais consultores e clique em 'Relatório' para ver os resultados."
+                : "Nenhum dado encontrado para os filtros selecionados."
+               }
              </div>
            )}
         </div>
         
-        {activeChart && chartData.length > 0 && (
+        {activeChart && hasFetchedData && chartData.length > 0 && (
           <div className="mt-8">
             <Card>
               <CardHeader>
@@ -304,7 +307,7 @@ export default function Home() {
                     formatCurrency={formatCurrency} 
                   />
                 )}
-                {activeChart === 'pie' && <RevenuePieChart data={chartData} />}
+                {activeChart === 'pie' && <RevenuePieChart data={chartData} formatCurrency={formatCurrency} />}
               </CardContent>
             </Card>
           </div>
@@ -314,3 +317,5 @@ export default function Home() {
     </div>
   );
 }
+
+    
