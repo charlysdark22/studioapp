@@ -14,20 +14,6 @@ export const metadata: Metadata = {
   description: "Painel de desempenho de consultores da Agence",
 };
 
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
-  return (
-    // LanguageProvider is a Client Component, wrapping ClientBody and the rest of the app.
-    <LanguageProvider>
-        <ClientBody>{children}</ClientBody>
-    </LanguageProvider>
-  );
-}
-
-// This component remains a Client Component to use the useLanguage hook.
 function ClientBody({ children }: { children: React.ReactNode }) {
     const { language } = useLanguage();
     return (
@@ -38,4 +24,16 @@ function ClientBody({ children }: { children: React.ReactNode }) {
             </body>
         </html>
     )
+}
+
+export default function RootLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
+  return (
+    <LanguageProvider>
+        <ClientBody>{children}</ClientBody>
+    </LanguageProvider>
+  );
 }
