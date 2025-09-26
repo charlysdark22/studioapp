@@ -5,22 +5,22 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { useLanguage } from '@/context/language-context';
 
 export default function LoginPage() {
-  // En una aplicación real, aquí manejarías el estado del formulario y la lógica de envío
+  const { translations } = useLanguage();
+
   const handleLogin = () => {
-    // Lógica de inicio de sesión
     console.log('Iniciando sesión...');
-    // Redirigir al usuario después de un inicio de sesión exitoso
   };
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-100">
       <Card className="w-full max-w-sm">
         <CardHeader>
-          <CardTitle className="text-2xl">Login</CardTitle>
+          <CardTitle className="text-2xl">{translations.loginPage.title}</CardTitle>
           <CardDescription>
-            Digite seu email e senha para acessar sua conta.
+            {translations.loginPage.description}
           </CardDescription>
         </CardHeader>
         <CardContent className="grid gap-4">
@@ -29,21 +29,21 @@ export default function LoginPage() {
             <Input id="email" type="email" placeholder="m@exemplo.com" required />
           </div>
           <div className="grid gap-2">
-            <Label htmlFor="password">Senha</Label>
+            <Label htmlFor="password">{translations.loginPage.password}</Label>
             <Input id="password" type="password" required />
           </div>
           <Button type="button" onClick={handleLogin} className="w-full">
-            Entrar
+            {translations.loginPage.loginButton}
           </Button>
           <div className="mt-4 text-center text-sm">
-            Não tem uma conta?{' '}
+            {translations.loginPage.noAccount}{' '}
             <Link href="/register" className="underline">
-              Registrar-se
+              {translations.loginPage.registerLink}
             </Link>
           </div>
            <div className="mt-2 text-center text-sm">
             <Link href="/" className="underline">
-              Voltar para a página inicial
+              {translations.loginPage.backToHome}
             </Link>
           </div>
         </CardContent>

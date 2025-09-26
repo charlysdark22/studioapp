@@ -3,10 +3,13 @@
 import React from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowRight, BarChart } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
+import { useLanguage } from '@/context/language-context';
+
 
 export default function LandingPage() {
+  const { translations } = useLanguage();
+
   return (
     <div className="flex flex-col min-h-screen bg-gray-50">
       <header className="bg-white shadow-sm">
@@ -16,10 +19,10 @@ export default function LandingPage() {
           </div>
           <nav className="flex items-center gap-4">
             <Link href="/performance" passHref>
-              <Button variant="outline">Painel de Desempenho</Button>
+              <Button variant="outline">{translations.landingPage.performancePanel}</Button>
             </Link>
             <Link href="/login" passHref>
-              <Button>Login</Button>
+              <Button>{translations.landingPage.login}</Button>
             </Link>
           </nav>
         </div>
@@ -28,14 +31,14 @@ export default function LandingPage() {
       <main className="flex-1 flex items-center justify-center">
         <div className="text-center">
           <h1 className="text-5xl font-bold text-gray-800 mb-4">
-            Bem-vindo ao Painel de Desempenho
+            {translations.landingPage.welcomeTitle}
           </h1>
           <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
-            Uma solução completa para visualizar e analisar o desempenho comercial dos seus consultores em tempo real.
+            {translations.landingPage.welcomeSubtitle}
           </p>
           <Link href="/performance" passHref>
              <Button size="lg">
-              Acessar o Painel <ArrowRight className="ml-2" />
+              {translations.landingPage.accessPanel} <ArrowRight className="ml-2" />
             </Button>
           </Link>
         </div>
@@ -43,7 +46,7 @@ export default function LandingPage() {
 
       <footer className="bg-white py-6">
         <div className="container mx-auto text-center text-gray-500">
-          <p>&copy; {new Date().getFullYear()} Agence. Todos os direitos reservados.</p>
+          <p>&copy; {new Date().getFullYear()} Agence. {translations.landingPage.footerRights}</p>
         </div>
       </footer>
     </div>

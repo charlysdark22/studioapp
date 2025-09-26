@@ -18,7 +18,7 @@ import {
 } from '@/components/ui/popover';
 import { CalendarIcon, PieChart, BarChart } from 'lucide-react';
 import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
+import { ptBR, es } from 'date-fns/locale';
 import { DateRange } from 'react-day-picker';
 import { MultiSelect, Option } from 'react-multi-select-component';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -26,6 +26,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { getConsultants, getPerformanceData } from '../actions';
 import MainHeader from '@/components/main-header';
 import { useToast } from '@/hooks/use-toast';
+import { useLanguage } from '@/context/language-context';
 
 const PerformanceChart = dynamic(() => import('@/components/performance-chart'), { ssr: false });
 const RevenuePieChart = dynamic(() => import('@/components/revenue-pie-chart'), { ssr: false });
@@ -45,6 +46,7 @@ type ChartDataType = {
 }
 
 export default function PerformancePage() {
+  const { language, translations } = useLanguage();
   const [consultantOptions, setConsultantOptions] = useState<Option[]>([]);
   const [selectedConsultants, setSelectedConsultants] = useState<Option[]>([]);
   const [date, setDate] = useState<DateRange | undefined>({
@@ -71,17 +73,26 @@ export default function PerformancePage() {
   }, []);
 
   const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('pt-BR', {
+    const locale = language === 'pt' ? 'pt-BR' : 'es-AR'; // Using es-AR for R$ format
+    const currency = language === 'pt' ? 'BRL' : 'ARS'; // To show R$ or $
+    
+    // In spanish we show R$ but Intl api does not support it for es-AR. We will fake it.
+    const formatted = new Intl.NumberFormat(locale, {
       style: 'currency',
-      currency: 'BRL',
+      currency: currency,
     }).format(value);
+
+    if (language === 'es') {
+        return formatted.replace('$', 'R$');
+    }
+    return formatted;
   };
 
   const handleFetchData = async () => {
     if (selectedConsultants.length === 0 || !date?.from || !date?.to) {
       toast({
-        title: "Selección requerida",
-        description: "Por favor, seleccione al menos un consultor y un período de fechas.",
+        title: translations.performancePage.toastSelectionRequiredTitle,
+        description: translations.performancePage.toastSelectionRequiredDescription,
         variant: "destructive",
       });
       return;
@@ -104,15 +115,15 @@ export default function PerformancePage() {
       setHasFetchedData(true);
       if (result.tableData.length === 0) {
         toast({
-          title: "Sin resultados",
-          description: "No se encontraron datos para los filtros seleccionados.",
+          title: translations.performancePage.toastNoResultsTitle,
+          description: translations.performancePage.toastNoResultsDescription,
         });
       }
     } catch (error) {
       console.error("Error fetching performance data:", error);
       toast({
         title: "Error",
-        description: error instanceof Error ? error.message : "Ocurrió un error al buscar los datos.",
+        description: error instanceof Error ? error.message : translations.performancePage.toastFetchError,
         variant: "destructive",
       });
       setHasFetchedData(false);
@@ -132,25 +143,34 @@ export default function PerformancePage() {
   const handleShowChart = (type: 'bar' | 'pie') => {
     if (!hasFetchedData || tableData.length === 0) {
         toast({
-            title: "Acción requerida",
-            description: "Por favor, genere un reporte con datos antes de mostrar un gráfico.",
+            title: translations.performancePage.toastActionRequiredTitle,
+            description: translations.performancePage.toastActionRequiredDescription,
             variant: "destructive",
         });
         return;
     }
     setActiveChart(prev => prev === type ? null : type);
   };
+  
+  const dateLocale = language === 'pt' ? ptBR : es;
+  const multiSelectStrings = {
+      selectSomeItems: translations.performancePage.multiSelect.selectSomeItems,
+      allItemsAreSelected: translations.performancePage.multiSelect.allItemsAreSelected,
+      selectAll: translations.performancePage.multiSelect.selectAll,
+      search: translations.performancePage.multiSelect.search,
+  };
+
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-100">
       <MainHeader />
       
       <main className="flex-1 container mx-auto p-4">
-        <h2 className="text-lg font-semibold text-gray-800 mb-2">Performance Comercial</h2>
+        <h2 className="text-lg font-semibold text-gray-800 mb-2">{translations.performancePage.title}</h2>
         <div className="bg-white p-4 rounded-t-lg border">
             <div className="flex flex-wrap items-end gap-4">
                <div className="flex-1 min-w-[250px]">
-                  <label className="text-sm font-medium text-gray-700 block mb-1">Período</label>
+                  <label className="text-sm font-medium text-gray-700 block mb-1">{translations.performancePage.periodLabel}</label>
                    <Popover>
                     <PopoverTrigger asChild>
                       <Button
@@ -169,7 +189,7 @@ export default function PerformancePage() {
                             format(date.from, 'dd/MM/yyyy')
                           )
                         ) : (
-                          <span>Selecione um período</span>
+                          <span>{translations.performancePage.datePlaceholder}</span>
                         )}
                       </Button>
                     </PopoverTrigger>
@@ -186,30 +206,25 @@ export default function PerformancePage() {
                   </Popover>
                </div>
                <div className="flex-1 min-w-[250px]">
-                 <label className="text-sm font-medium text-gray-700 block mb-1">Consultores</label>
+                 <label className="text-sm font-medium text-gray-700 block mb-1">{translations.performancePage.consultantsLabel}</label>
                  <MultiSelect
                     options={consultantOptions}
                     value={selectedConsultants}
                     onChange={setSelectedConsultants}
-                    labelledBy="Selecione os consultores"
-                     overrideStrings={{
-                      selectSomeItems: 'Selecione...',
-                      allItemsAreSelected: 'Todos selecionados',
-                      selectAll: 'Selecionar todos',
-                      search: 'Buscar',
-                    }}
+                    labelledBy={translations.performancePage.consultantsLabel}
+                     overrideStrings={multiSelectStrings}
                     className="w-full"
                   />
                </div>
                <div className="flex gap-2 flex-wrap">
                  <Button onClick={handleFetchData} disabled={isLoading}>
-                    {isLoading ? 'Buscando...' : 'Relatório'}
+                    {isLoading ? translations.performancePage.loadingButton : translations.performancePage.reportButton}
                  </Button>
                  <Button onClick={() => handleShowChart('bar')} variant={activeChart === 'bar' ? 'secondary' : 'outline'} disabled={!hasFetchedData || isLoading || tableData.length === 0}>
-                    <BarChart /> Gráfico
+                    <BarChart /> {translations.performancePage.chartButton}
                  </Button>
                   <Button onClick={() => handleShowChart('pie')} variant={activeChart === 'pie' ? 'secondary' : 'outline'} disabled={!hasFetchedData || isLoading || tableData.length === 0}>
-                    <PieChart /> Pizza
+                    <PieChart /> {translations.performancePage.pieButton}
                   </Button>
                </div>
             </div>
@@ -217,17 +232,17 @@ export default function PerformancePage() {
         
         <div className="bg-white p-4 rounded-b-lg border-l border-r border-b">
            {isLoading ? (
-             <div className="text-center py-10 text-gray-500">Carregando dados...</div>
+             <div className="text-center py-10 text-gray-500">{translations.performancePage.loadingData}</div>
            ) : hasFetchedData && tableData.length > 0 ? (
              <Table>
                 <TableHeader>
                   <TableRow className="bg-gray-200 hover:bg-gray-200">
-                    <TableHead className="font-bold text-gray-700">Consultor</TableHead>
-                    <TableHead className="font-bold text-gray-700">Período</TableHead>
-                    <TableHead className="text-right font-bold text-gray-700">Receita Líquida</TableHead>
-                    <TableHead className="text-right font-bold text-gray-700">Custo Fixo</TableHead>
-                    <TableHead className="text-right font-bold text-gray-700">Comissão</TableHead>
-                    <TableHead className="text-right font-bold text-gray-700">Lucro</TableHead>
+                    <TableHead className="font-bold text-gray-700">{translations.performancePage.table.consultant}</TableHead>
+                    <TableHead className="font-bold text-gray-700">{translations.performancePage.table.period}</TableHead>
+                    <TableHead className="text-right font-bold text-gray-700">{translations.performancePage.table.netRevenue}</TableHead>
+                    <TableHead className="text-right font-bold text-gray-700">{translations.performancePage.table.fixedCost}</TableHead>
+                    <TableHead className="text-right font-bold text-gray-700">{translations.performancePage.table.commission}</TableHead>
+                    <TableHead className="text-right font-bold text-gray-700">{translations.performancePage.table.profit}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -236,7 +251,7 @@ export default function PerformancePage() {
                     return (
                         <TableRow key={item.name}>
                             <TableCell className="font-medium text-blue-700">{item.name}</TableCell>
-                            <TableCell>{format(date!.from!, 'MMMM yyyy', { locale: ptBR })} - {format(date!.to!, 'MMMM yyyy', { locale: ptBR })}</TableCell>
+                            <TableCell>{format(date!.from!, 'MMMM yyyy', { locale: dateLocale })} - {format(date!.to!, 'MMMM yyyy', { locale: dateLocale })}</TableCell>
                             <TableCell className="text-right">{formatCurrency(item.netRevenue)}</TableCell>
                             <TableCell className="text-right text-red-500">{formatCurrency(item.fixedCost)}</TableCell>
                             <TableCell className="text-right text-orange-500">{formatCurrency(item.commission)}</TableCell>
@@ -256,8 +271,8 @@ export default function PerformancePage() {
            ) : (
              <div className="text-center py-10 text-gray-500">
                {!hasFetchedData && !isLoading 
-                ? "Por favor, selecione uno o más consultores y un período, y luego haga clic en 'Relatório' para ver los resultados."
-                : "No se encontraron datos para los filtros seleccionados."
+                ? translations.performancePage.welcomeMessage
+                : translations.performancePage.noDataMessage
                }
              </div>
            )}
@@ -268,7 +283,7 @@ export default function PerformancePage() {
             <Card>
               <CardHeader>
                 <CardTitle>
-                  {activeChart === 'bar' ? 'Desempeño de los Consultores' : 'Participación en la Receita Líquida'}
+                  {activeChart === 'bar' ? translations.performancePage.barChartTitle : translations.performancePage.pieChartTitle}
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -277,6 +292,7 @@ export default function PerformancePage() {
                     data={chartData} 
                     averageFixedCost={averageFixedCost}
                     formatCurrency={formatCurrency} 
+                    translations={translations.performancePage.chartTranslations}
                   />
                 )}
                 {activeChart === 'pie' && <RevenuePieChart data={chartData} formatCurrency={formatCurrency} />}

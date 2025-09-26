@@ -26,8 +26,10 @@ import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { sendVerificationCode } from '@/ai/flows/send-verification-code';
 import { useState } from 'react';
+import { useLanguage } from '@/context/language-context';
 
-const formSchema = z.object({
+
+const formSchemaPt = z.object({
   name: z.string().min(2, { message: 'O nome deve ter pelo menos 2 caracteres.' }),
   email: z.string().email({ message: 'Por favor, insira um email válido.' }),
   password: z
@@ -35,10 +37,22 @@ const formSchema = z.object({
     .min(6, { message: 'A senha deve ter pelo menos 6 caracteres.' }),
 });
 
+const formSchemaEs = z.object({
+  name: z.string().min(2, { message: 'El nombre debe tener al menos 2 caracteres.' }),
+  email: z.string().email({ message: 'Por favor, ingrese un email válido.' }),
+  password: z
+    .string()
+    .min(6, { message: 'La contraseña debe tener al menos 6 caracteres.' }),
+});
+
+
 export default function RegisterPage() {
   const router = useRouter();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
+  const { language, translations } = useLanguage();
+  
+  const formSchema = language === 'pt' ? formSchemaPt : formSchemaEs;
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -52,21 +66,19 @@ export default function RegisterPage() {
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
     try {
-      // Llama a la acción del servidor que simula el envío del código
       const result = await sendVerificationCode({ email: values.email });
 
       toast({
-        title: 'Verificação Necessária',
-        description: `Um código de verificação foi enviado para ${result.email}. Por favor, verifique seu e-mail.`,
+        title: translations.registerPage.toastSuccessTitle,
+        description: `${translations.registerPage.toastSuccessDescription} ${result.email}.`,
       });
 
-      // Redirige al usuario a la página de verificación
       router.push(`/verify?email=${encodeURIComponent(result.email)}`);
     } catch (error) {
       console.error(error);
       toast({
-        title: 'Erro',
-        description: 'Houve um problema ao tentar se registrar. Tente novamente.',
+        title: translations.registerPage.toastErrorTitle,
+        description: translations.registerPage.toastErrorDescription,
         variant: 'destructive',
       });
       setIsLoading(false);
@@ -77,9 +89,9 @@ export default function RegisterPage() {
     <div className="flex items-center justify-center min-h-screen bg-gray-100">
       <Card className="w-full max-w-sm">
         <CardHeader>
-          <CardTitle className="text-2xl">Registrar</CardTitle>
+          <CardTitle className="text-2xl">{translations.registerPage.title}</CardTitle>
           <CardDescription>
-            Crie sua conta preenchendo os campos abaixo.
+            {translations.registerPage.description}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -90,9 +102,9 @@ export default function RegisterPage() {
                 name="name"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Nome</FormLabel>
+                    <FormLabel>{translations.registerPage.nameLabel}</FormLabel>
                     <FormControl>
-                      <Input placeholder="Seu Nome" {...field} />
+                      <Input placeholder={translations.registerPage.namePlaceholder} {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -116,7 +128,7 @@ export default function RegisterPage() {
                 name="password"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Senha</FormLabel>
+                    <FormLabel>{translations.registerPage.passwordLabel}</FormLabel>
                     <FormControl>
                       <Input type="password" {...field} />
                     </FormControl>
@@ -125,14 +137,14 @@ export default function RegisterPage() {
                 )}
               />
               <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? 'Criando Conta...' : 'Criar Conta'}
+                {isLoading ? translations.registerPage.loadingButton : translations.registerPage.submitButton}
               </Button>
             </form>
           </Form>
           <div className="mt-4 text-center text-sm">
-            Já tem uma conta?{' '}
+            {translations.registerPage.alreadyHaveAccount}{' '}
             <Link href="/login" className="underline">
-              Login
+              {translations.registerPage.loginLink}
             </Link>
           </div>
         </CardContent>

@@ -26,16 +26,23 @@ import {
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { useState } from 'react';
+import { useLanguage } from '@/context/language-context';
 
-const formSchema = z.object({
+const formSchemaPt = z.object({
+  code: z
+    .string()
+    .min(6, { message: 'O código deve ter 6 dígitos.' })
+    .max(6, { message: 'O código deve ter 6 dígitos.' }),
+});
+
+const formSchemaEs = z.object({
   code: z
     .string()
     .min(6, { message: 'El código debe tener 6 dígitos.' })
     .max(6, { message: 'El código debe tener 6 dígitos.' }),
 });
 
-// Este es el código que el flujo de Genkit "generaría".
-// En una aplicación real, se obtendría de la sesión o de una base de datos.
+
 const SIMULATED_CORRECT_CODE = "123456";
 
 function VerifyPageContent() {
@@ -44,20 +51,23 @@ function VerifyPageContent() {
   const email = searchParams.get('email');
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
+  const { language, translations } = useLanguage();
+
+  const formSchema = language === 'pt' ? formSchemaPt : formSchemaEs;
 
   if (!email) {
     return (
         <div className="flex items-center justify-center min-h-screen bg-gray-100">
             <Card className="w-full max-w-sm text-center">
                  <CardHeader>
-                    <CardTitle className="text-2xl">Error</CardTitle>
+                    <CardTitle className="text-2xl">{translations.verifyPage.errorTitle}</CardTitle>
                     <CardDescription>
-                        No fue posible encontrar el e-mail para verificación.
+                        {translations.verifyPage.errorDescription}
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
                     <Link href="/register">
-                        <Button variant="outline">Voltar ao Registro</Button>
+                        <Button variant="outline">{translations.verifyPage.backToRegister}</Button>
                     </Link>
                 </CardContent>
             </Card>
@@ -76,24 +86,21 @@ function VerifyPageContent() {
     setIsLoading(true);
     console.log(`Verificando código para ${email} con el código ${values.code}`);
 
-    // Simula un retardo de red
     await new Promise(resolve => setTimeout(resolve, 1000));
     
-    // Aquí es donde harías una llamada al backend para verificar el código.
-    // Para esta simulación, lo comparamos con un valor estático.
     if (values.code === SIMULATED_CORRECT_CODE) {
       toast({
-        title: '¡Cuenta Verificada!',
-        description: 'Su cuenta ha sido verificada con éxito. Ahora puede iniciar sesión.',
+        title: translations.verifyPage.toastSuccessTitle,
+        description: translations.verifyPage.toastSuccessDescription,
       });
       router.push('/login');
     } else {
       toast({
-        title: 'Código Inválido',
-        description: 'El código de verificación es incorrecto. Por favor, intente de nuevo.',
+        title: translations.verifyPage.toastErrorTitle,
+        description: translations.verifyPage.toastErrorDescription,
         variant: 'destructive',
       });
-      form.setError("code", { message: "Código incorrecto." });
+      form.setError("code", { message: translations.verifyPage.toastInvalidCode });
       setIsLoading(false);
     }
   }
@@ -102,9 +109,9 @@ function VerifyPageContent() {
     <div className="flex items-center justify-center min-h-screen bg-gray-100">
       <Card className="w-full max-w-sm">
         <CardHeader>
-          <CardTitle className="text-2xl">Verifique sua Conta</CardTitle>
+          <CardTitle className="text-2xl">{translations.verifyPage.title}</CardTitle>
           <CardDescription>
-            Enviamos um código de 6 dígitos para {email}. Insira-o abaixo. (Dica: é 123456)
+            {translations.verifyPage.description(email)}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -115,7 +122,7 @@ function VerifyPageContent() {
                 name="code"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Código de Verificação</FormLabel>
+                    <FormLabel>{translations.verifyPage.codeLabel}</FormLabel>
                     <FormControl>
                       <Input placeholder="123456" {...field} />
                     </FormControl>
@@ -124,7 +131,7 @@ function VerifyPageContent() {
                 )}
               />
               <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? 'Verificando...' : 'Verificar'}
+                {isLoading ? translations.verifyPage.loadingButton : translations.verifyPage.submitButton}
               </Button>
             </form>
           </Form>

@@ -23,14 +23,20 @@ interface PerformanceChartProps {
   data: PerformanceData[];
   averageFixedCost: number;
   formatCurrency: (value: number) => string;
+  translations: {
+    netRevenue: string;
+    fixedCost: string;
+    commission: string;
+    averageFixedCost: string;
+  }
 }
 
-const PerformanceChart = ({ data, averageFixedCost, formatCurrency }: PerformanceChartProps) => {
+const PerformanceChart = ({ data, averageFixedCost, formatCurrency, translations }: PerformanceChartProps) => {
   const chartData = data.map(item => ({
     name: item.name,
-    'Receita Líquida': item.netRevenue,
-    'Custo Fixo': item.fixedCost,
-    'Comissão': item.commission,
+    [translations.netRevenue]: item.netRevenue,
+    [translations.fixedCost]: item.fixedCost,
+    [translations.commission]: item.commission,
   }));
 
   return (
@@ -49,12 +55,12 @@ const PerformanceChart = ({ data, averageFixedCost, formatCurrency }: Performanc
         <YAxis tickFormatter={(value) => formatCurrency(Number(value))} />
         <Tooltip formatter={(value) => formatCurrency(Number(value))} />
         <Legend />
-        <Bar dataKey="Receita Líquida" fill="#82ca9d" />
-        <Bar dataKey="Custo Fixo" fill="#8884d8" />
-        <Bar dataKey="Comissão" fill="#ffc658" />
+        <Bar dataKey={translations.netRevenue} fill="#82ca9d" />
+        <Bar dataKey={translations.fixedCost} fill="#8884d8" />
+        <Bar dataKey={translations.commission} fill="#ffc658" />
         <ReferenceLine 
           y={averageFixedCost} 
-          label={{ value: `Custo Fixo Médio: ${formatCurrency(averageFixedCost)}`, position: 'insideTopLeft', fill: 'red' }} 
+          label={{ value: `${translations.averageFixedCost}: ${formatCurrency(averageFixedCost)}`, position: 'insideTopLeft', fill: 'red' }} 
           stroke="red" 
           strokeDasharray="3 3" 
         />
