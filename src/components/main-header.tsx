@@ -2,13 +2,20 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Briefcase, User, LogOut, Building, ShoppingCart, DollarSign, Home } from 'lucide-react';
+import { Briefcase, User, LogOut, Building, ShoppingCart, DollarSign, Home, Languages } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/context/language-context';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { Button } from './ui/button';
 
 export default function MainHeader() {
   const pathname = usePathname();
-  const { language, toggleLanguage, translations } = useLanguage();
+  const { language, setLanguage, translations } = useLanguage();
 
   const navLinks = [
     { href: '/agence', icon: Building, label: translations.mainHeader.agence },
@@ -47,12 +54,25 @@ export default function MainHeader() {
             </nav>
           </div>
           <div className='flex items-center gap-4'>
-            <button
-                onClick={toggleLanguage}
-                className="border rounded-md px-3 py-1 text-sm font-medium hover:bg-gray-100"
-            >
-                {language === 'pt' ? 'ES' : 'PT'}
-            </button>
+             <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="icon">
+                        <Languages />
+                        <span className="sr-only">Change language</span>
+                    </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => setLanguage('pt')}>
+                        Português
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setLanguage('es')}>
+                        Español
+                    </DropdownMenuItem>
+                     <DropdownMenuItem onClick={() => setLanguage('en')}>
+                        English
+                    </DropdownMenuItem>
+                </DropdownMenuContent>
+            </DropdownMenu>
             <div className="text-2xl font-bold text-gray-700">
                 Agence
             </div>

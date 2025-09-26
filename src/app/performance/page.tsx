@@ -18,7 +18,7 @@ import {
 } from '@/components/ui/popover';
 import { CalendarIcon, PieChart, BarChart } from 'lucide-react';
 import { format } from 'date-fns';
-import { ptBR, es } from 'date-fns/locale';
+import { ptBR, es, enUS } from 'date-fns/locale';
 import { DateRange } from 'react-day-picker';
 import { MultiSelect, Option } from 'react-multi-select-component';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -73,16 +73,22 @@ export default function PerformancePage() {
   }, []);
 
   const formatCurrency = (value: number) => {
-    const locale = language === 'pt' ? 'pt-BR' : 'es-AR'; // Using es-AR for R$ format
-    const currency = language === 'pt' ? 'BRL' : 'ARS'; // To show R$ or $
+    const localeMap = { pt: 'pt-BR', es: 'es-AR', en: 'en-US' };
+    const currencyMap = { pt: 'BRL', es: 'ARS', en: 'USD' }; // Note: ARS for R$ symbol hack
+
+    const locale = localeMap[language];
+    const currency = currencyMap[language];
     
-    // In spanish we show R$ but Intl api does not support it for es-AR. We will fake it.
     const formatted = new Intl.NumberFormat(locale, {
       style: 'currency',
       currency: currency,
     }).format(value);
 
     if (language === 'es') {
+        return formatted.replace('$', 'R$');
+    }
+    if (language === 'en') {
+        // Even for english, we want to show BRL symbol
         return formatted.replace('$', 'R$');
     }
     return formatted;
@@ -152,7 +158,8 @@ export default function PerformancePage() {
     setActiveChart(prev => prev === type ? null : type);
   };
   
-  const dateLocale = language === 'pt' ? ptBR : es;
+  const dateLocaleMap = { pt: ptBR, es: es, en: enUS };
+  const dateLocale = dateLocaleMap[language];
   const multiSelectStrings = {
       selectSomeItems: translations.performancePage.multiSelect.selectSomeItems,
       allItemsAreSelected: translations.performancePage.multiSelect.allItemsAreSelected,
@@ -182,11 +189,11 @@ export default function PerformancePage() {
                         {date?.from ? (
                           date.to ? (
                             <>
-                              {format(date.from, 'dd/MM/yyyy')} -{' '}
-                              {format(date.to, 'dd/MM/yyyy')}
+                              {format(date.from, 'PPP', { locale: dateLocale })} -{' '}
+                              {format(date.to, 'PPP', { locale: dateLocale })}
                             </>
                           ) : (
-                            format(date.from, 'dd/MM/yyyy')
+                            format(date.from, 'PPP', { locale: dateLocale })
                           )
                         ) : (
                           <span>{translations.performancePage.datePlaceholder}</span>
@@ -201,6 +208,7 @@ export default function PerformancePage() {
                         selected={date}
                         onSelect={setDate}
                         numberOfMonths={2}
+                        locale={dateLocale}
                       />
                     </PopoverContent>
                   </Popover>

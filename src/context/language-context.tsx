@@ -1,8 +1,8 @@
 'use client';
 
-import React, { createContext, useState, useContext, ReactNode } from 'react';
+import React, { createContext, useState, useContext, ReactNode, useEffect } from 'react';
 
-type Language = 'pt' | 'es';
+type Language = 'pt' | 'es' | 'en';
 
 type Translations = {
     [key: string]: any;
@@ -10,7 +10,7 @@ type Translations = {
 
 interface LanguageContextProps {
   language: Language;
-  toggleLanguage: () => void;
+  setLanguage: (language: Language) => void;
   translations: Translations;
 }
 
@@ -191,7 +191,7 @@ const translationsData: { [key in Language]: Translations } = {
         welcomeMessage: 'Por favor, seleccione uno o más consultores y un período, y luego haga clic en "Relatório" para ver los resultados.',
         noDataMessage: 'No se encontraron datos para los filtros seleccionados.',
         barChartTitle: 'Desempeño de los Consultores',
-        pieChartTitle: 'Participación en la Receta Líquida',
+        pieChartTitle: 'Participación en los Ingresos Netos',
         table: {
             consultant: 'Consultor',
             period: 'Período',
@@ -221,6 +221,109 @@ const translationsData: { [key in Language]: Translations } = {
         }
     }
   },
+  en: {
+    mainHeader: {
+        welcomeMessage: 'Good afternoon, [User]. You are in',
+        inicio: 'Home',
+        agence: 'Agence',
+        projetos: 'Projects',
+        administrativo: 'Administrative',
+        comercial: 'Commercial',
+        financeiro: 'Financial',
+        usuario: 'User',
+        sair: 'Logout'
+    },
+    landingPage: {
+        performancePanel: 'Performance Panel',
+        login: 'Login',
+        welcomeTitle: 'Welcome to the Performance Panel',
+        welcomeSubtitle: 'A complete solution to visualize and analyze the commercial performance of your consultants in real time.',
+        accessPanel: 'Access Panel',
+        footerRights: 'All rights reserved.'
+    },
+    loginPage: {
+        title: 'Login',
+        description: 'Enter your email and password to access your account.',
+        password: 'Password',
+        loginButton: 'Login',
+        noAccount: "Don't have an account?",
+        registerLink: 'Sign up',
+        backToHome: 'Back to Home'
+    },
+    registerPage: {
+        title: 'Register',
+        description: 'Create your account by filling out the fields below.',
+        nameLabel: 'Name',
+        namePlaceholder: 'Your Name',
+        passwordLabel: 'Password',
+        submitButton: 'Create Account',
+        loadingButton: 'Creating Account...',
+        alreadyHaveAccount: 'Already have an account?',
+        loginLink: 'Login',
+        toastSuccessTitle: 'Verification Required',
+        toastSuccessDescription: 'A verification code has been sent to',
+        toastErrorTitle: 'Error',
+        toastErrorDescription: 'There was a problem trying to register. Please try again.'
+    },
+    verifyPage: {
+        title: 'Verify Your Account',
+        description: (email: string) => `We sent a 6-digit code to ${email}. Please enter it below. (Hint: it's 123456)`,
+        codeLabel: 'Verification Code',
+        submitButton: 'Verify',
+        loadingButton: 'Verifying...',
+        loadingFallback: 'Loading...',
+        errorTitle: 'Error',
+        errorDescription: 'Could not find the email for verification.',
+        backToRegister: 'Back to Register',
+        toastSuccessTitle: 'Account Verified!',
+        toastSuccessDescription: 'Your account has been successfully verified. You can now log in.',
+        toastErrorTitle: 'Invalid Code',
+        toastErrorDescription: 'The verification code is incorrect. Please try again.',
+        toastInvalidCode: 'Incorrect code.'
+    },
+    performancePage: {
+        title: 'Commercial Performance',
+        periodLabel: 'Period',
+        datePlaceholder: 'Select a period',
+        consultantsLabel: 'Consultants',
+        reportButton: 'Report',
+        loadingButton: 'Fetching...',
+        chartButton: 'Chart',
+        pieButton: 'Pie',
+        loadingData: 'Loading data...',
+        welcomeMessage: "Please select one or more consultants and a period, then click 'Report' to see the results.",
+        noDataMessage: 'No data found for the selected filters.',
+        barChartTitle: 'Consultant Performance',
+        pieChartTitle: 'Net Revenue Share',
+        table: {
+            consultant: 'Consultant',
+            period: 'Period',
+            netRevenue: 'Net Revenue',
+            fixedCost: 'Fixed Cost',
+            commission: 'Commission',
+            profit: 'Profit'
+        },
+        toastSelectionRequiredTitle: 'Selection Required',
+        toastSelectionRequiredDescription: 'Please select at least one consultant and a date range.',
+        toastNoResultsTitle: 'No Results',
+        toastNoResultsDescription: 'No data was found for the selected filters.',
+        toastFetchError: 'An error occurred while fetching the data.',
+        toastActionRequiredTitle: 'Action Required',
+        toastActionRequiredDescription: 'Please generate a report with data before showing a chart.',
+        multiSelect: {
+            selectSomeItems: 'Select...',
+            allItemsAreSelected: 'All items are selected',
+            selectAll: 'Select All',
+            search: 'Search',
+        },
+        chartTranslations: {
+            netRevenue: 'Net Revenue',
+            fixedCost: 'Fixed Cost',
+            commission: 'Commission',
+            averageFixedCost: 'Average Fixed Cost',
+        }
+    }
+  },
 };
 
 const LanguageContext = createContext<LanguageContextProps | undefined>(undefined);
@@ -228,14 +331,24 @@ const LanguageContext = createContext<LanguageContextProps | undefined>(undefine
 export const LanguageProvider = ({ children }: { children: ReactNode }) => {
   const [language, setLanguage] = useState<Language>('pt');
 
-  const toggleLanguage = () => {
-    setLanguage((prev) => (prev === 'pt' ? 'es' : 'pt'));
+  const setLanguageWrapper = (lang: Language) => {
+    setLanguage(lang);
+    if (typeof window !== 'undefined') {
+        localStorage.setItem('language', lang);
+    }
   };
+
+  useEffect(() => {
+    const storedLang = localStorage.getItem('language') as Language | null;
+    if (storedLang && translationsData[storedLang]) {
+      setLanguage(storedLang);
+    }
+  }, []);
 
   const translations = translationsData[language];
 
   return (
-    <LanguageContext.Provider value={{ language, toggleLanguage, translations }}>
+    <LanguageContext.Provider value={{ language, setLanguage: setLanguageWrapper, translations }}>
       {children}
     </LanguageContext.Provider>
   );
