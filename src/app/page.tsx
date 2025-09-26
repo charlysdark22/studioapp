@@ -15,7 +15,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
-import { CalendarIcon, Briefcase, User, PieChart, BarChart, LogOut, FileText, Building, ShoppingCart, DollarSign, Settings } from 'lucide-react';
+import { CalendarIcon, Briefcase, User, PieChart, BarChart, LogOut, Building, ShoppingCart, DollarSign } from 'lucide-react';
 import { format } from 'date-fns';
 import { DateRange } from 'react-day-picker';
 import { MultiSelect, Option } from 'react-multi-select-component';
@@ -119,34 +119,17 @@ export default function Home() {
     const selectedNames = selectedConsultants.map(c => c.label);
     const dataByConsultant = selectedNames.map(name => {
       const consultantData = performanceData.filter(d => d.name === name);
-      // Receita Líquida: SUM(VALOR) - SUM(VALOR * (TOTAL_IMP_INC / 100))
-      // Simulado como a soma do valor líquido dos dados de exemplo.
       const netRevenue = consultantData.reduce((sum, item) => sum + item.liquid, 0);
-      
-      // Comissão: SUM(VALOR * (COMISSAO_CN / 100))
-      // Simulado como a soma da comissão dos dados de exemplo.
       const commission = consultantData.reduce((sum, item) => sum + item.commission, 0);
-
-      // Custo Fixo: Tomamos el primero que aparezca (debería ser el mismo por consultor).
       const fixedCost = consultantData.length > 0 ? consultantData[0].fixedCost : 0;
       
-      return {
-        name,
-        netRevenue,
-        commission,
-        fixedCost,
-      };
+      return { name, netRevenue, commission, fixedCost };
     });
 
-    // Custo Fixo Médio: SUM(BRUT_SALARIO) / num_consultores
-    // Simulado como el promedio de los costos fijos de los consultores seleccionados.
     const totalFixedCost = dataByConsultant.reduce((sum, item) => sum + item.fixedCost, 0);
     const averageFixedCost = selectedConsultants.length > 0 ? totalFixedCost / selectedConsultants.length : 0;
     
-    return {
-      performance: dataByConsultant,
-      averageFixedCost,
-    };
+    return { performance: dataByConsultant, averageFixedCost };
   };
 
   const chartData = getChartData();
@@ -161,15 +144,15 @@ export default function Home() {
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-100">
-      <header className="bg-white shadow-md">
+      <header className="bg-white shadow-sm">
         <div className="container mx-auto px-4 py-2">
            <div className="flex justify-between items-center">
               <div>
                   <p className="text-sm text-gray-600">Boa tarde Carlos. Você está em Consulta Comissões CN</p>
                   <nav className="flex items-center gap-4 mt-2">
                       <a href="#" className="flex items-center gap-1 text-sm text-gray-700 hover:text-blue-600"><Building size={16} /> Agence</a>
-                      <a href="#" className="flex items-center gap-1 text-sm text-gray-700 hover:text-blue-600"><FileText size={16} /> Projetos</a>
-                      <a href="#" className="flex items-center gap-1 text-sm text-gray-700 hover:text-blue-600"><Briefcase size={16} /> Administrativo</a>
+                      <a href="#" className="flex items-center gap-1 text-sm text-gray-700 hover:text-blue-600"><Briefcase size={16} /> Projetos</a>
+                      <a href="#" className="flex items-center gap-1 text-sm text-gray-700 hover:text-blue-600"><User size={16} /> Administrativo</a>
                       <a href="#" className="flex items-center gap-1 text-sm text-gray-700 hover:text-blue-600"><ShoppingCart size={16} /> Comercial</a>
                       <a href="#" className="flex items-center gap-1 text-sm text-gray-700 hover:text-blue-600"><DollarSign size={16} /> Financeiro</a>
                       <a href="#" className="flex items-center gap-1 text-sm text-gray-700 hover:text-blue-600"><User size={16} /> Usuário</a>
