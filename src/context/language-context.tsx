@@ -331,19 +331,28 @@ const LanguageContext = createContext<LanguageContextProps | undefined>(undefine
 export const LanguageProvider = ({ children }: { children: ReactNode }) => {
   const [language, setLanguage] = useState<Language>('pt');
 
+  useEffect(() => {
+    // This effect runs only on the client
+    const storedLang = localStorage.getItem('language') as Language | null;
+    if (storedLang && translationsData[storedLang]) {
+      setLanguage(storedLang);
+    }
+  }, []);
+
+  useEffect(() => {
+    // This effect also runs only on the client, after the component mounts
+    if (typeof window !== 'undefined') {
+        document.documentElement.lang = language;
+    }
+  }, [language]);
+
+
   const setLanguageWrapper = (lang: Language) => {
     setLanguage(lang);
     if (typeof window !== 'undefined') {
         localStorage.setItem('language', lang);
     }
   };
-
-  useEffect(() => {
-    const storedLang = localStorage.getItem('language') as Language | null;
-    if (storedLang && translationsData[storedLang]) {
-      setLanguage(storedLang);
-    }
-  }, []);
 
   const translations = translationsData[language];
 
