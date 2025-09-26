@@ -80,7 +80,9 @@ const PerformanceRequestSchema = z.object({
 export async function getPerformanceData(request: z.infer<typeof PerformanceRequestSchema>) {
     const validation = PerformanceRequestSchema.safeParse(request);
     if (!validation.success) {
-        throw new Error("Invalid request");
+        // En un caso real, loggearíamos validation.error para depuración
+        console.error("Invalid request to getPerformanceData:", validation.error.flatten());
+        throw new Error("Solicitud inválida. Faltan parámetros o son incorrectos.");
     }
 
     const { consultants, from, to } = validation.data;
@@ -97,27 +99,27 @@ export async function getPerformanceData(request: z.infer<typeof PerformanceRequ
     const tableData = filteredRawData.map(item => ({
         ...item,
         // (VALOR – (VALOR*TOTAL_IMP_INC))*COMISSAO_CN 
-        // Suponiendo que 'liquid' es (VALOR - IMPUESTOS) y 'commissionPercentage' es COMISSAO_CN
+        // Asumiendo que 'liquid' es (VALOR - IMPUESTOS) y 'commissionPercentage' es COMISSAO_CN
         commission: item.liquid * (item.commissionPercentage / 100)
     }));
     
-    // 3. Procesar datos para los gráficos
+    // 3. Procesar datos para los gráficos y la tabla de resumen
     const chartData = consultants.map(name => {
         const consultantData = tableData.filter(d => d.name === name);
         
         const netRevenue = consultantData.reduce((sum, item) => sum + item.liquid, 0);
         const commission = consultantData.reduce((sum, item) => sum + item.commission, 0);
-        const fixedCost = consultantData.length > 0 ? consultantData[0].fixedCost : 0;
+        const fixedCost = consultantData.length > 0 ? consultantData[0].fixedCost : 0; // Usar el costo fijo del consultor
         
         return { name, netRevenue, commission, fixedCost };
     });
 
-    // 4. Calcular costo fijo medio
+    // 4. Calcular costo fijo medio de los consultores seleccionados
     const totalFixedCost = chartData.reduce((sum, item) => sum + item.fixedCost, 0);
     const averageFixedCost = consultants.length > 0 ? totalFixedCost / consultants.length : 0;
 
     return {
-        tableData,
+        tableData: chartData, // Devolver los datos ya agregados
         chartData,
         averageFixedCost,
     };

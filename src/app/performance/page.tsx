@@ -18,6 +18,7 @@ import {
 } from '@/components/ui/popover';
 import { CalendarIcon, PieChart, BarChart } from 'lucide-react';
 import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 import { DateRange } from 'react-day-picker';
 import { MultiSelect, Option } from 'react-multi-select-component';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -31,15 +32,9 @@ const RevenuePieChart = dynamic(() => import('@/components/revenue-pie-chart'), 
 
 type TableDataType = {
   name: string;
-  client: string;
-  system: string;
-  os: string;
-  nf: string;
-  emission: string;
-  total: number;
-  liquid: number;
+  netRevenue: number;
+  fixedCost: number;
   commission: number;
-  status: string;
 };
 
 type ChartDataType = {
@@ -81,16 +76,12 @@ export default function PerformancePage() {
       currency: 'BRL',
     }).format(value);
   };
-  
-  const formatDate = (dateString: string) => {
-    return format(new Date(dateString), 'dd/MM/yyyy');
-  }
 
   const handleFetchData = async () => {
     if (selectedConsultants.length === 0 || !date?.from || !date?.to) {
       toast({
         title: "Selección requerida",
-        description: "Por favor, selecione consultores e um período de datas.",
+        description: "Por favor, seleccione al menos un consultor y un período de fechas.",
         variant: "destructive",
       });
       return;
@@ -114,14 +105,14 @@ export default function PerformancePage() {
       if (result.tableData.length === 0) {
         toast({
           title: "Sin resultados",
-          description: "Nenhum dado encontrado para os filtros selecionados.",
+          description: "No se encontraron datos para los filtros seleccionados.",
         });
       }
     } catch (error) {
       console.error("Error fetching performance data:", error);
       toast({
         title: "Error",
-        description: "Ocorreu um erro ao buscar os dados.",
+        description: error instanceof Error ? error.message : "Ocurrió un error al buscar los datos.",
         variant: "destructive",
       });
       setHasFetchedData(false);
@@ -131,22 +122,18 @@ export default function PerformancePage() {
   };
 
   const totals = useMemo(() => tableData.reduce((acc, curr) => {
-    acc.liquid += curr.liquid;
+    acc.netRevenue += curr.netRevenue;
     acc.commission += curr.commission;
+    const profit = curr.netRevenue - (curr.fixedCost + curr.commission);
+    acc.profit += profit;
     return acc;
-  }, { liquid: 0, commission: 0 }), [tableData]);
-
-  const groupedData = useMemo(() => tableData.reduce((acc, item) => {
-    (acc[item.name] = acc[item.name] || []).push(item);
-    return acc;
-  }, {} as Record<string, typeof tableData>), [tableData]);
-
+  }, { netRevenue: 0, commission: 0, profit: 0 }), [tableData]);
 
   const handleShowChart = (type: 'bar' | 'pie') => {
-    if (!hasFetchedData) {
+    if (!hasFetchedData || tableData.length === 0) {
         toast({
             title: "Acción requerida",
-            description: "Por favor, gere um relatório primeiro clicando no botão 'Relatório'.",
+            description: "Por favor, genere un reporte con datos antes de mostrar un gráfico.",
             variant: "destructive",
         });
         return;
@@ -218,10 +205,10 @@ export default function PerformancePage() {
                  <Button onClick={handleFetchData} disabled={isLoading}>
                     {isLoading ? 'Buscando...' : 'Relatório'}
                  </Button>
-                 <Button onClick={() => handleShowChart('bar')} variant={activeChart === 'bar' ? 'secondary' : 'outline'} disabled={!hasFetchedData || isLoading}>
+                 <Button onClick={() => handleShowChart('bar')} variant={activeChart === 'bar' ? 'secondary' : 'outline'} disabled={!hasFetchedData || isLoading || tableData.length === 0}>
                     <BarChart /> Gráfico
                  </Button>
-                  <Button onClick={() => handleShowChart('pie')} variant={activeChart === 'pie' ? 'secondary' : 'outline'} disabled={!hasFetchedData || isLoading}>
+                  <Button onClick={() => handleShowChart('pie')} variant={activeChart === 'pie' ? 'secondary' : 'outline'} disabled={!hasFetchedData || isLoading || tableData.length === 0}>
                     <PieChart /> Pizza
                   </Button>
                </div>
@@ -235,6 +222,7 @@ export default function PerformancePage() {
              <Table>
                 <TableHeader>
                   <TableRow className="bg-gray-200 hover:bg-gray-200">
+                    <TableHead className="font-bold text-gray-700">Consultor</TableHead>
                     <TableHead className="font-bold text-gray-700">Período</TableHead>
                     <TableHead className="text-right font-bold text-gray-700">Receita Líquida</TableHead>
                     <TableHead className="text-right font-bold text-gray-700">Custo Fixo</TableHead>
@@ -243,43 +231,33 @@ export default function PerformancePage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {Object.entries(groupedData).map(([name, items]) => {
-                    const consultantChartData = chartData.find(c => c.name === name);
-                    if (!consultantChartData) return null;
-
-                    const totalLiquid = items.reduce((acc, i) => acc + i.liquid, 0);
-                    const totalCommission = items.reduce((acc, i) => acc + i.commission, 0);
-                    const profit = totalLiquid - (consultantChartData.fixedCost + totalCommission);
-                    
+                  {tableData.map((item) => {
+                    const profit = item.netRevenue - (item.fixedCost + item.commission);
                     return (
-                      <React.Fragment key={name}>
-                        <TableRow className="bg-gray-50 font-bold">
-                          <TableCell colSpan={5} className="text-blue-700">{name}</TableCell>
+                        <TableRow key={item.name}>
+                            <TableCell className="font-medium text-blue-700">{item.name}</TableCell>
+                            <TableCell>{format(date!.from!, 'MMMM yyyy', { locale: ptBR })} - {format(date!.to!, 'MMMM yyyy', { locale: ptBR })}</TableCell>
+                            <TableCell className="text-right">{formatCurrency(item.netRevenue)}</TableCell>
+                            <TableCell className="text-right text-red-500">{formatCurrency(item.fixedCost)}</TableCell>
+                            <TableCell className="text-right text-orange-500">{formatCurrency(item.commission)}</TableCell>
+                            <TableCell className={`text-right font-bold ${profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>{formatCurrency(profit)}</TableCell>
                         </TableRow>
-                          <TableRow>
-                            <TableCell>{format(date!.from!, 'MMMM yyyy', {})} - {format(date!.to!, 'MMMM yyyy', {})}</TableCell>
-                            <TableCell className="text-right">{formatCurrency(totalLiquid)}</TableCell>
-                            <TableCell className="text-right text-red-500">{formatCurrency(consultantChartData.fixedCost)}</TableCell>
-                            <TableCell className="text-right text-orange-500">{formatCurrency(totalCommission)}</TableCell>
-                            <TableCell className={`text-right font-bold ${profit > 0 ? 'text-green-600' : 'text-red-600'}`}>{formatCurrency(profit)}</TableCell>
-                          </TableRow>
-                      </React.Fragment>
                     )
                   })}
                   <TableRow className="bg-gray-200 font-bold">
-                    <TableCell>SALDO</TableCell>
-                    <TableCell className="text-right">{formatCurrency(totals.liquid)}</TableCell>
+                    <TableCell colSpan={2}>SALDO</TableCell>
+                    <TableCell className="text-right">{formatCurrency(totals.netRevenue)}</TableCell>
                     <TableCell></TableCell>
                     <TableCell className="text-right">{formatCurrency(totals.commission)}</TableCell>
-                    <TableCell></TableCell>
+                    <TableCell className={`text-right ${totals.profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>{formatCurrency(totals.profit)}</TableCell>
                   </TableRow>
                 </TableBody>
               </Table>
            ) : (
              <div className="text-center py-10 text-gray-500">
                {!hasFetchedData && !isLoading 
-                ? "Por favor, selecione um ou mais consultores e clique em 'Relatório' para ver os resultados."
-                : "Nenhum dado encontrado para os filtros selecionados."
+                ? "Por favor, selecione uno o más consultores y un período, y luego haga clic en 'Relatório' para ver los resultados."
+                : "No se encontraron datos para los filtros seleccionados."
                }
              </div>
            )}
@@ -290,7 +268,7 @@ export default function PerformancePage() {
             <Card>
               <CardHeader>
                 <CardTitle>
-                  {activeChart === 'bar' ? 'Desempenho dos Consultores' : 'Participação na Receita Líquida'}
+                  {activeChart === 'bar' ? 'Desempeño de los Consultores' : 'Participación en la Receita Líquida'}
                 </CardTitle>
               </CardHeader>
               <CardContent>

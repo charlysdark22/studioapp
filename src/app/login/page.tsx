@@ -7,6 +7,13 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
 export default function LoginPage() {
+  // En una aplicación real, aquí manejarías el estado del formulario y la lógica de envío
+  const handleLogin = () => {
+    // Lógica de inicio de sesión
+    console.log('Iniciando sesión...');
+    // Redirigir al usuario después de un inicio de sesión exitoso
+  };
+
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-100">
       <Card className="w-full max-w-sm">
@@ -25,7 +32,9 @@ export default function LoginPage() {
             <Label htmlFor="password">Senha</Label>
             <Input id="password" type="password" required />
           </div>
-          <Button className="w-full">Entrar</Button>
+          <Button type="button" onClick={handleLogin} className="w-full">
+            Entrar
+          </Button>
           <div className="mt-4 text-center text-sm">
             Não tem uma conta?{' '}
             <Link href="/register" className="underline">
