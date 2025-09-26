@@ -21,7 +21,7 @@ import { DateRange } from 'react-day-picker';
 import { MultiSelect, Option } from 'react-multi-select-component';
 import PerformanceChart from '@/components/performance-chart';
 import RevenuePieChart from '@/components/revenue-pie-chart';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Calendar } from '@/components/ui/calendar';
 
 // Datos de ejemplo
@@ -43,6 +43,7 @@ const performanceData = [
     total: 3963.77,
     liquid: 3720.00,
     commission: 243.77,
+    fixedCost: 1500, // Custo Fixo de ejemplo
     status: 'NF Emitida',
   },
   {
@@ -55,6 +56,7 @@ const performanceData = [
     total: 2876.43,
     liquid: 1500.00,
     commission: 1376.43,
+    fixedCost: 1500,
     status: 'NF Paga',
   },
   {
@@ -67,6 +69,7 @@ const performanceData = [
     total: 3963.77,
     liquid: 3720.00,
     commission: 243.77,
+    fixedCost: 2000,
     status: 'NF Emitida',
   },
 ];
@@ -83,6 +86,7 @@ export default function Home() {
     from: new Date(2007, 0, 1),
     to: new Date(2007, 0, 31),
   });
+  const [activeChart, setActiveChart] = useState<'bar' | 'pie' | null>(null);
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
@@ -111,6 +115,34 @@ export default function Home() {
     return acc;
   }, {} as Record<string, typeof filteredData>);
 
+  const getChartData = () => {
+    const selectedNames = selectedConsultants.map(c => c.label);
+    const dataByConsultant = selectedNames.map(name => {
+      const consultantData = performanceData.filter(d => d.name === name);
+      const netRevenue = consultantData.reduce((sum, item) => sum + item.liquid, 0);
+      const commission = consultantData.reduce((sum, item) => sum + item.commission, 0);
+      // El costo fijo es por consultor, tomamos el primero que aparezca.
+      const fixedCost = consultantData.length > 0 ? consultantData[0].fixedCost : 0;
+      
+      return {
+        name,
+        netRevenue,
+        commission,
+        fixedCost,
+      };
+    });
+    return dataByConsultant;
+  };
+
+  const chartData = getChartData();
+
+  const handleShowChart = (type: 'bar' | 'pie') => {
+    if (activeChart === type) {
+      setActiveChart(null);
+    } else {
+      setActiveChart(type);
+    }
+  };
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-100">
@@ -191,7 +223,12 @@ export default function Home() {
                     className="w-full"
                   />
                </div>
-               <Button disabled={selectedConsultants.length === 0}>Consultar</Button>
+               <Button onClick={() => handleShowChart('bar')} disabled={selectedConsultants.length === 0} variant="outline">
+                  <BarChart /> Relatório
+               </Button>
+                <Button onClick={() => handleShowChart('pie')} disabled={selectedConsultants.length === 0} variant="outline">
+                  <PieChart /> Pizza
+               </Button>
             </div>
         </div>
         
@@ -257,9 +294,23 @@ export default function Home() {
              </div>
            )}
         </div>
-         <div className="flex justify-end mt-4">
-             <Button variant="outline">Atualizar</Button>
-         </div>
+        
+        {activeChart && chartData.length > 0 && (
+          <div className="mt-8">
+            <Card>
+              <CardHeader>
+                <CardTitle>
+                  {activeChart === 'bar' ? 'Gráfico de Desempenho' : 'Participação na Receita'}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {activeChart === 'bar' && <PerformanceChart data={chartData} formatCurrency={formatCurrency} />}
+                {activeChart === 'pie' && <RevenuePieChart data={chartData} />}
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
       </main>
     </div>
   );
