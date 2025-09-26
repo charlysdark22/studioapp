@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   Table,
@@ -23,70 +23,52 @@ import PerformanceChart from '@/components/performance-chart';
 import RevenuePieChart from '@/components/revenue-pie-chart';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Calendar } from '@/components/ui/calendar';
+import { getConsultants, getPerformanceData } from './actions';
 
-// Datos de ejemplo
-const consultantsData = [
-  { co_usuario: 'agonzalez', no_usuario: 'Aguebo Gonzalez' },
-  { co_usuario: 'bhurtado', no_usuario: 'Braulio Hurtado' },
-  { co_usuario: 'cfaria', no_usuario: 'Carlos Faria' },
-  { co_usuario: 'dvicente', no_usuario: 'David Vicente' },
-];
+type TableDataType = {
+  name: string;
+  client: string;
+  system: string;
+  os: string;
+  nf: string;
+  emission: string;
+  total: number;
+  liquid: number;
+  commission: number;
+  fixedCost: number;
+  status: string;
+};
 
-const performanceData = [
-  {
-    name: 'Aguebo Gonzalez',
-    client: 'Toyota do Brasil',
-    system: 'Fleet Control',
-    os: 'Desenvolvimento e Implantação',
-    nf: '373627',
-    emission: '17/01/2007',
-    total: 3963.77,
-    liquid: 3720.00,
-    commission: 243.77,
-    fixedCost: 1500,
-    status: 'NF Emitida',
-  },
-  {
-    name: 'Aguebo Gonzalez',
-    client: 'Toyota do Brasil',
-    system: 'SOS',
-    os: 'Upgrade de Performance',
-    nf: '373628',
-    emission: '17/01/2007',
-    total: 2876.43,
-    liquid: 1500.00,
-    commission: 1376.43,
-    fixedCost: 1500,
-    status: 'NF Paga',
-  },
-  {
-    name: 'Braulio Hurtado',
-    client: 'Renault',
-    system: 'SGV Compact',
-    os: 'Desenvolvimento e Implantação',
-    nf: '373610',
-    emission: '17/01/2007',
-    total: 3963.77,
-    liquid: 3720.00,
-    commission: 243.77,
-    fixedCost: 2000,
-    status: 'NF Emitida',
-  },
-];
-
-
-const consultantOptions: Option[] = consultantsData.map((c) => ({
-  label: c.no_usuario,
-  value: c.co_usuario,
-}));
+type ChartDataType = {
+    name: string;
+    netRevenue: number;
+    commission: number;
+    fixedCost: number;
+}
 
 export default function Home() {
+  const [consultantOptions, setConsultantOptions] = useState<Option[]>([]);
   const [selectedConsultants, setSelectedConsultants] = useState<Option[]>([]);
-  const [date, setDate] = React.useState<DateRange | undefined>({
+  const [date, setDate] = useState<DateRange | undefined>({
     from: new Date(2007, 0, 1),
     to: new Date(2007, 0, 31),
   });
+
+  const [tableData, setTableData] = useState<TableDataType[]>([]);
+  const [chartData, setChartData] = useState<ChartDataType[]>([]);
+  const [averageFixedCost, setAverageFixedCost] = useState(0);
+
   const [activeChart, setActiveChart] = useState<'bar' | 'pie' | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+
+
+  useEffect(() => {
+    async function loadConsultants() {
+      const consultants = await getConsultants();
+      setConsultantOptions(consultants.map(c => ({ label: c.no_usuario, value: c.co_usuario })));
+    }
+    loadConsultants();
+  }, []);
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
@@ -95,56 +77,53 @@ export default function Home() {
     }).format(value);
   };
   
-  const getFilteredData = () => {
-    if (selectedConsultants.length === 0) return [];
-    const selectedNames = selectedConsultants.map(c => c.label);
-    return performanceData.filter(d => selectedNames.includes(d.name));
+  const formatDate = (dateString: string) => {
+    return format(new Date(dateString), 'dd/MM/yyyy');
   }
 
-  const filteredData = getFilteredData();
+  const handleFetchData = async () => {
+    if (selectedConsultants.length === 0 || !date?.from || !date?.to) {
+      alert("Por favor, selecione consultores e um período de datas.");
+      return;
+    }
+    setIsLoading(true);
+    setActiveChart(null);
+    try {
+      const request = {
+        consultants: selectedConsultants.map(c => c.label),
+        from: date.from,
+        to: date.to,
+      };
+      const result = await getPerformanceData(request);
+      setTableData(result.tableData);
+      setChartData(result.chartData);
+      setAverageFixedCost(result.averageFixedCost);
+    } catch (error) {
+      console.error("Error fetching performance data:", error);
+      alert("Ocorreu um erro ao buscar os dados.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-  const totals = filteredData.reduce((acc, curr) => {
+  const totals = tableData.reduce((acc, curr) => {
     acc.total += curr.total;
     acc.liquid += curr.liquid;
     acc.commission += curr.commission;
     return acc;
   }, { total: 0, liquid: 0, commission: 0 });
 
-  const groupedData = filteredData.reduce((acc, item) => {
+  const groupedData = tableData.reduce((acc, item) => {
     (acc[item.client] = acc[item.client] || []).push(item);
     return acc;
-  }, {} as Record<string, typeof filteredData>);
+  }, {} as Record<string, typeof tableData>);
 
-  const getChartData = () => {
-    const selectedNames = selectedConsultants.map(c => c.label);
-    const dataByConsultant = selectedNames.map(name => {
-      const consultantData = performanceData.filter(d => d.name === name);
-      // Lógica de cálculo basada en las instrucciones
-      // Receita Líquida: SUM(VALOR) - SUM(VALOR * (TOTAL_IMP_INC / 100))
-      // En los datos de ejemplo, 'liquid' representa la Receita Líquida
-      const netRevenue = consultantData.reduce((sum, item) => sum + item.liquid, 0);
-
-      // Comissão: (VALOR – (VALOR*TOTAL_IMP_INC))*COMISSAO_CN
-      // En los datos de ejemplo, 'commission' representa la comisión ya calculada
-      const commission = consultantData.reduce((sum, item) => sum + item.commission, 0);
-      
-      // Custo Fixo: BRUT_SALARIO
-      // En los datos de ejemplo, 'fixedCost' representa el Custo Fixo
-      const fixedCost = consultantData.length > 0 ? consultantData[0].fixedCost : 0;
-      
-      return { name, netRevenue, commission, fixedCost };
-    });
-
-    // Custo Fixo Médio: SUM(BRUT_SALARIO) / COUNT(consultores)
-    const totalFixedCost = dataByConsultant.reduce((sum, item) => sum + item.fixedCost, 0);
-    const averageFixedCost = selectedConsultants.length > 0 ? totalFixedCost / selectedConsultants.length : 0;
-    
-    return { performance: dataByConsultant, averageFixedCost };
-  };
-
-  const chartData = getChartData();
 
   const handleShowChart = (type: 'bar' | 'pie') => {
+    if (tableData.length === 0) {
+        alert("Por favor, gere um relatório primeiro clicando no botão 'Relatório'.");
+        return;
+    }
     if (activeChart === type) {
       setActiveChart(null);
     } else {
@@ -232,17 +211,22 @@ export default function Home() {
                     className="w-full"
                   />
                </div>
-               <Button onClick={() => handleShowChart('bar')} disabled={selectedConsultants.length === 0} variant="outline">
-                  <BarChart /> Relatório
+               <Button onClick={handleFetchData} disabled={isLoading}>
+                  {isLoading ? 'Buscando...' : 'Relatório'}
                </Button>
-                <Button onClick={() => handleShowChart('pie')} disabled={selectedConsultants.length === 0} variant="outline">
+               <Button onClick={() => handleShowChart('bar')} variant="outline">
+                  <BarChart /> Gráfico
+               </Button>
+                <Button onClick={() => handleShowChart('pie')} variant="outline">
                   <PieChart /> Pizza
                </Button>
             </div>
         </div>
         
         <div className="bg-white p-4 rounded-b-lg border-l border-r border-b">
-           {selectedConsultants.length > 0 && filteredData.length > 0 ? (
+           {isLoading ? (
+             <div className="text-center py-10 text-gray-500">Carregando dados...</div>
+           ) : tableData.length > 0 ? (
              <Table>
                 <TableHeader>
                   <TableRow className="bg-gray-200 hover:bg-gray-200">
@@ -271,7 +255,7 @@ export default function Home() {
                             <TableCell>{item.system}</TableCell>
                             <TableCell className="text-orange-500">{item.os}</TableCell>
                             <TableCell>{item.nf}</TableCell>
-                            <TableCell>{item.emission}</TableCell>
+                            <TableCell>{formatDate(item.emission)}</TableCell>
                             <TableCell className="text-right">{formatCurrency(item.total)}</TableCell>
                             <TableCell className="text-right">{formatCurrency(item.liquid)}</TableCell>
                             <TableCell className="text-right">{formatCurrency(item.commission)}</TableCell>
@@ -299,12 +283,12 @@ export default function Home() {
               </Table>
            ) : (
              <div className="text-center py-10 text-gray-500">
-               {selectedConsultants.length > 0 ? "Nenhum dado encontrado para os consultores selecionados." : "Por favor, selecione um ou mais consultores para ver os resultados."}
+               "Por favor, selecione um ou mais consultores e clique em 'Relatório' para ver os resultados."
              </div>
            )}
         </div>
         
-        {activeChart && chartData.performance.length > 0 && (
+        {activeChart && chartData.length > 0 && (
           <div className="mt-8">
             <Card>
               <CardHeader>
@@ -315,12 +299,12 @@ export default function Home() {
               <CardContent>
                 {activeChart === 'bar' && (
                   <PerformanceChart 
-                    data={chartData.performance} 
-                    averageFixedCost={chartData.averageFixedCost}
+                    data={chartData} 
+                    averageFixedCost={averageFixedCost}
                     formatCurrency={formatCurrency} 
                   />
                 )}
-                {activeChart === 'pie' && <RevenuePieChart data={chartData.performance} />}
+                {activeChart === 'pie' && <RevenuePieChart data={chartData} />}
               </CardContent>
             </Card>
           </div>
@@ -329,3 +313,4 @@ export default function Home() {
       </main>
     </div>
   );
+}
