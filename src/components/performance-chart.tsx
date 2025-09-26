@@ -8,6 +8,7 @@ import {
   Tooltip,
   Legend,
   ResponsiveContainer,
+  ReferenceLine,
 } from 'recharts';
 
 interface PerformanceData {
@@ -19,10 +20,11 @@ interface PerformanceData {
 
 interface PerformanceChartProps {
   data: PerformanceData[];
+  averageFixedCost: number;
   formatCurrency: (value: number) => string;
 }
 
-const PerformanceChart = ({ data, formatCurrency }: PerformanceChartProps) => {
+const PerformanceChart = ({ data, averageFixedCost, formatCurrency }: PerformanceChartProps) => {
   const chartData = data.map(item => ({
     name: item.name,
     'Receita Líquida': item.netRevenue,
@@ -49,6 +51,12 @@ const PerformanceChart = ({ data, formatCurrency }: PerformanceChartProps) => {
         <Bar dataKey="Receita Líquida" fill="#82ca9d" />
         <Bar dataKey="Custo Fixo" fill="#8884d8" />
         <Bar dataKey="Comissão" fill="#ffc658" />
+        <ReferenceLine 
+          y={averageFixedCost} 
+          label={{ value: `Custo Fixo Médio: ${formatCurrency(averageFixedCost)}`, position: 'insideTopLeft' }} 
+          stroke="red" 
+          strokeDasharray="3 3" 
+        />
       </BarChart>
     </ResponsiveContainer>
   );

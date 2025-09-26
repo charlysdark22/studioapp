@@ -119,9 +119,15 @@ export default function Home() {
     const selectedNames = selectedConsultants.map(c => c.label);
     const dataByConsultant = selectedNames.map(name => {
       const consultantData = performanceData.filter(d => d.name === name);
+      // Receita Líquida: SUM(VALOR) - SUM(VALOR * (TOTAL_IMP_INC / 100))
+      // Simulado como a soma do valor líquido dos dados de exemplo.
       const netRevenue = consultantData.reduce((sum, item) => sum + item.liquid, 0);
+      
+      // Comissão: SUM(VALOR * (COMISSAO_CN / 100))
+      // Simulado como a soma da comissão dos dados de exemplo.
       const commission = consultantData.reduce((sum, item) => sum + item.commission, 0);
-      // El costo fijo es por consultor, tomamos el primero que aparezca.
+
+      // Custo Fixo: Tomamos el primero que aparezca (debería ser el mismo por consultor).
       const fixedCost = consultantData.length > 0 ? consultantData[0].fixedCost : 0;
       
       return {
@@ -131,7 +137,16 @@ export default function Home() {
         fixedCost,
       };
     });
-    return dataByConsultant;
+
+    // Custo Fixo Médio: SUM(BRUT_SALARIO) / num_consultores
+    // Simulado como el promedio de los costos fijos de los consultores seleccionados.
+    const totalFixedCost = dataByConsultant.reduce((sum, item) => sum + item.fixedCost, 0);
+    const averageFixedCost = selectedConsultants.length > 0 ? totalFixedCost / selectedConsultants.length : 0;
+    
+    return {
+      performance: dataByConsultant,
+      averageFixedCost,
+    };
   };
 
   const chartData = getChartData();
@@ -295,7 +310,7 @@ export default function Home() {
            )}
         </div>
         
-        {activeChart && chartData.length > 0 && (
+        {activeChart && chartData.performance.length > 0 && (
           <div className="mt-8">
             <Card>
               <CardHeader>
@@ -304,8 +319,14 @@ export default function Home() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                {activeChart === 'bar' && <PerformanceChart data={chartData} formatCurrency={formatCurrency} />}
-                {activeChart === 'pie' && <RevenuePieChart data={chartData} />}
+                {activeChart === 'bar' && (
+                  <PerformanceChart 
+                    data={chartData.performance} 
+                    averageFixedCost={chartData.averageFixedCost}
+                    formatCurrency={formatCurrency} 
+                  />
+                )}
+                {activeChart === 'pie' && <RevenuePieChart data={chartData.performance} />}
               </CardContent>
             </Card>
           </div>
