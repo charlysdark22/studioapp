@@ -8,7 +8,7 @@ import { LanguageProvider, useLanguage } from "@/context/language-context";
 
 const inter = Inter({ subsets: ["latin"] });
 
-// Metadata sigue funcionando en un componente cliente raíz
+// This metadata object is now statically exported from a Server Component.
 export const metadata: Metadata = {
   title: "Painel de Desempenho de Consultores",
   description: "Painel de desempenho de consultores da Agence",
@@ -20,14 +20,14 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    // El proveedor de idioma necesita estar dentro del layout que es cliente
+    // LanguageProvider is a Client Component, wrapping ClientBody and the rest of the app.
     <LanguageProvider>
         <ClientBody>{children}</ClientBody>
     </LanguageProvider>
   );
 }
 
-// Componente auxiliar para acceder al contexto del idioma para la etiqueta html
+// This component remains a Client Component to use the useLanguage hook.
 function ClientBody({ children }: { children: React.ReactNode }) {
     const { language } = useLanguage();
     return (
