@@ -43,7 +43,7 @@ const performanceData = [
     total: 3963.77,
     liquid: 3720.00,
     commission: 243.77,
-    fixedCost: 1500, // Custo Fixo de ejemplo
+    fixedCost: 1500,
     status: 'NF Emitida',
   },
   {
@@ -119,13 +119,23 @@ export default function Home() {
     const selectedNames = selectedConsultants.map(c => c.label);
     const dataByConsultant = selectedNames.map(name => {
       const consultantData = performanceData.filter(d => d.name === name);
+      // Lógica de cálculo basada en las instrucciones
+      // Receita Líquida: SUM(VALOR) - SUM(VALOR * (TOTAL_IMP_INC / 100))
+      // En los datos de ejemplo, 'liquid' representa la Receita Líquida
       const netRevenue = consultantData.reduce((sum, item) => sum + item.liquid, 0);
+
+      // Comissão: (VALOR – (VALOR*TOTAL_IMP_INC))*COMISSAO_CN
+      // En los datos de ejemplo, 'commission' representa la comisión ya calculada
       const commission = consultantData.reduce((sum, item) => sum + item.commission, 0);
+      
+      // Custo Fixo: BRUT_SALARIO
+      // En los datos de ejemplo, 'fixedCost' representa el Custo Fixo
       const fixedCost = consultantData.length > 0 ? consultantData[0].fixedCost : 0;
       
       return { name, netRevenue, commission, fixedCost };
     });
 
+    // Custo Fixo Médio: SUM(BRUT_SALARIO) / COUNT(consultores)
     const totalFixedCost = dataByConsultant.reduce((sum, item) => sum + item.fixedCost, 0);
     const averageFixedCost = selectedConsultants.length > 0 ? totalFixedCost / selectedConsultants.length : 0;
     
@@ -148,15 +158,15 @@ export default function Home() {
         <div className="container mx-auto px-4 py-2">
            <div className="flex justify-between items-center">
               <div>
-                  <p className="text-sm text-gray-600">Boa tarde Carlos. Você está em Consulta Comissões CN</p>
+                  <p className="text-sm text-gray-600">Boa tarde, [Usuario]. Você está em</p>
                   <nav className="flex items-center gap-4 mt-2">
-                      <a href="#" className="flex items-center gap-1 text-sm text-gray-700 hover:text-blue-600"><Building size={16} /> Agence</a>
-                      <a href="#" className="flex items-center gap-1 text-sm text-gray-700 hover:text-blue-600"><Briefcase size={16} /> Projetos</a>
-                      <a href="#" className="flex items-center gap-1 text-sm text-gray-700 hover:text-blue-600"><User size={16} /> Administrativo</a>
-                      <a href="#" className="flex items-center gap-1 text-sm text-gray-700 hover:text-blue-600"><ShoppingCart size={16} /> Comercial</a>
-                      <a href="#" className="flex items-center gap-1 text-sm text-gray-700 hover:text-blue-600"><DollarSign size={16} /> Financeiro</a>
-                      <a href="#" className="flex items-center gap-1 text-sm text-gray-700 hover:text-blue-600"><User size={16} /> Usuário</a>
-                      <a href="#" className="flex items-center gap-1 text-sm text-gray-700 hover:text-blue-600"><LogOut size={16} /> Sair</a>
+                      <a href="/#" className="flex items-center gap-1 text-sm text-gray-700 hover:text-blue-600"><Building size={16} /> Agence</a>
+                      <a href="/#" className="flex items-center gap-1 text-sm text-gray-700 hover:text-blue-600"><Briefcase size={16} /> Projetos</a>
+                      <a href="/#" className="flex items-center gap-1 text-sm text-gray-700 hover:text-blue-600"><User size={16} /> Administrativo</a>
+                      <a href="/" className="flex items-center gap-1 text-sm text-blue-600 font-bold hover:text-blue-800"><ShoppingCart size={16} /> Comercial</a>
+                      <a href="/#" className="flex items-center gap-1 text-sm text-gray-700 hover:text-blue-600"><DollarSign size={16} /> Financeiro</a>
+                      <a href="/#" className="flex items-center gap-1 text-sm text-gray-700 hover:text-blue-600"><User size={16} /> Usuário</a>
+                      <a href="/#" className="flex items-center gap-1 text-sm text-gray-700 hover:text-blue-600"><LogOut size={16} /> Sair</a>
                   </nav>
               </div>
               <div className="text-2xl font-bold text-gray-700">
@@ -167,6 +177,7 @@ export default function Home() {
       </header>
       
       <main className="flex-1 container mx-auto p-4">
+        <h2 className="text-lg font-semibold text-gray-800 mb-2">Performance Comercial</h2>
         <div className="bg-white p-4 rounded-t-lg border">
             <div className="flex items-end gap-4">
                <div className="flex-1">
@@ -298,7 +309,7 @@ export default function Home() {
             <Card>
               <CardHeader>
                 <CardTitle>
-                  {activeChart === 'bar' ? 'Gráfico de Desempenho' : 'Participação na Receita'}
+                  {activeChart === 'bar' ? 'Desempenho dos Consultores' : 'Participação na Receita Líquida'}
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -318,4 +329,3 @@ export default function Home() {
       </main>
     </div>
   );
-}

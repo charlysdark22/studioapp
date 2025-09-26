@@ -53,7 +53,7 @@ const PerformanceChart = ({ data, averageFixedCost, formatCurrency }: Performanc
         <Bar dataKey="Comissão" fill="#ffc658" />
         <ReferenceLine 
           y={averageFixedCost} 
-          label={{ value: `Custo Fixo Médio: ${formatCurrency(averageFixedCost)}`, position: 'insideTopLeft' }} 
+          label={{ value: `Custo Fixo Médio: ${formatCurrency(averageFixedCost)}`, position: 'insideTopLeft', fill: 'red' }} 
           stroke="red" 
           strokeDasharray="3 3" 
         />
