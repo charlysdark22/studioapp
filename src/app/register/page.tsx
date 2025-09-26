@@ -11,7 +11,7 @@ export default function RegisterPage() {
     <div className="flex items-center justify-center min-h-screen bg-gray-100">
       <Card className="w-full max-w-sm">
         <CardHeader>
-          <CardTitle className="text-2xl">Registrar</se</CardTitle>
+          <CardTitle className="text-2xl">Registrar</CardTitle>
           <CardDescription>
             Crie sua conta preenchendo os campos abaixo.
           </CardDescription>
