@@ -1,4 +1,5 @@
 'use client';
+import { memo } from 'react';
 import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 interface PerformanceData {
@@ -53,6 +54,4 @@ const RevenuePieChart = ({ data, formatCurrency }: RevenuePieChartProps) => {
   );
 };
 
-export default RevenuePieChart;
-
-    
+export default memo(RevenuePieChart);

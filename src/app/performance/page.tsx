@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
+import dynamic from 'next/dynamic';
 import { Button } from '@/components/ui/button';
 import {
   Table,
@@ -19,12 +20,14 @@ import { CalendarIcon, PieChart, BarChart } from 'lucide-react';
 import { format } from 'date-fns';
 import { DateRange } from 'react-day-picker';
 import { MultiSelect, Option } from 'react-multi-select-component';
-import PerformanceChart from '@/components/performance-chart';
-import RevenuePieChart from '@/components/revenue-pie-chart';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Calendar } from '@/components/ui/calendar';
 import { getConsultants, getPerformanceData } from '../actions';
 import MainHeader from '@/components/main-header';
+import { useToast } from '@/hooks/use-toast';
+
+const PerformanceChart = dynamic(() => import('@/components/performance-chart'), { ssr: false });
+const RevenuePieChart = dynamic(() => import('@/components/revenue-pie-chart'), { ssr: false });
 
 type TableDataType = {
   name: string;
@@ -36,7 +39,6 @@ type TableDataType = {
   total: number;
   liquid: number;
   commission: number;
-  fixedCost: number;
   status: string;
 };
 
@@ -62,12 +64,13 @@ export default function PerformancePage() {
   const [activeChart, setActiveChart] = useState<'bar' | 'pie' | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [hasFetchedData, setHasFetchedData] = useState(false);
+  const { toast } = useToast();
 
 
   useEffect(() => {
     async function loadConsultants() {
       const consultants = await getConsultants();
-      setConsultantOptions(consultants.map(c => ({ label: c.no_usuario, value: c.co_usuario })));
+      setConsultantOptions(consultants.map(c => ({ label: c.no_usuario, value: c.no_usuario })));
     }
     loadConsultants();
   }, []);
@@ -85,11 +88,17 @@ export default function PerformancePage() {
 
   const handleFetchData = async () => {
     if (selectedConsultants.length === 0 || !date?.from || !date?.to) {
-      alert("Por favor, selecione consultores e um período de datas.");
+      toast({
+        title: "Selección requerida",
+        description: "Por favor, selecione consultores e um período de datas.",
+        variant: "destructive",
+      });
       return;
     }
     setIsLoading(true);
     setHasFetchedData(false);
+    setTableData([]);
+    setChartData([]);
     setActiveChart(null);
     try {
       const request = {
@@ -102,31 +111,44 @@ export default function PerformancePage() {
       setChartData(result.chartData);
       setAverageFixedCost(result.averageFixedCost);
       setHasFetchedData(true);
+      if (result.tableData.length === 0) {
+        toast({
+          title: "Sin resultados",
+          description: "Nenhum dado encontrado para os filtros selecionados.",
+        });
+      }
     } catch (error) {
       console.error("Error fetching performance data:", error);
-      alert("Ocorreu um erro ao buscar os dados.");
+      toast({
+        title: "Error",
+        description: "Ocorreu um erro ao buscar os dados.",
+        variant: "destructive",
+      });
       setHasFetchedData(false);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const totals = tableData.reduce((acc, curr) => {
-    acc.total += curr.total;
+  const totals = useMemo(() => tableData.reduce((acc, curr) => {
     acc.liquid += curr.liquid;
     acc.commission += curr.commission;
     return acc;
-  }, { total: 0, liquid: 0, commission: 0 });
+  }, { liquid: 0, commission: 0 }), [tableData]);
 
-  const groupedData = tableData.reduce((acc, item) => {
-    (acc[item.client] = acc[item.client] || []).push(item);
+  const groupedData = useMemo(() => tableData.reduce((acc, item) => {
+    (acc[item.name] = acc[item.name] || []).push(item);
     return acc;
-  }, {} as Record<string, typeof tableData>);
+  }, {} as Record<string, typeof tableData>), [tableData]);
 
 
   const handleShowChart = (type: 'bar' | 'pie') => {
     if (!hasFetchedData) {
-        alert("Por favor, gere um relatório primeiro clicando no botão 'Relatório'.");
+        toast({
+            title: "Acción requerida",
+            description: "Por favor, gere um relatório primeiro clicando no botão 'Relatório'.",
+            variant: "destructive",
+        });
         return;
     }
     setActiveChart(prev => prev === type ? null : type);
@@ -139,8 +161,8 @@ export default function PerformancePage() {
       <main className="flex-1 container mx-auto p-4">
         <h2 className="text-lg font-semibold text-gray-800 mb-2">Performance Comercial</h2>
         <div className="bg-white p-4 rounded-t-lg border">
-            <div className="flex items-end gap-4">
-               <div className="flex-1">
+            <div className="flex flex-wrap items-end gap-4">
+               <div className="flex-1 min-w-[250px]">
                   <label className="text-sm font-medium text-gray-700 block mb-1">Período</label>
                    <Popover>
                     <PopoverTrigger asChild>
@@ -176,7 +198,7 @@ export default function PerformancePage() {
                     </PopoverContent>
                   </Popover>
                </div>
-               <div className="flex-1">
+               <div className="flex-1 min-w-[250px]">
                  <label className="text-sm font-medium text-gray-700 block mb-1">Consultores</label>
                  <MultiSelect
                     options={consultantOptions}
@@ -192,15 +214,17 @@ export default function PerformancePage() {
                     className="w-full"
                   />
                </div>
-               <Button onClick={handleFetchData} disabled={isLoading}>
-                  {isLoading ? 'Buscando...' : 'Relatório'}
-               </Button>
-               <Button onClick={() => handleShowChart('bar')} variant={activeChart === 'bar' ? 'default' : 'outline'} disabled={!hasFetchedData || isLoading}>
-                  <BarChart /> Gráfico
-               </Button>
-                <Button onClick={() => handleShowChart('pie')} variant={activeChart === 'pie' ? 'default' : 'outline'} disabled={!hasFetchedData || isLoading}>
-                  <PieChart /> Pizza
-               </Button>
+               <div className="flex gap-2 flex-wrap">
+                 <Button onClick={handleFetchData} disabled={isLoading}>
+                    {isLoading ? 'Buscando...' : 'Relatório'}
+                 </Button>
+                 <Button onClick={() => handleShowChart('bar')} variant={activeChart === 'bar' ? 'secondary' : 'outline'} disabled={!hasFetchedData || isLoading}>
+                    <BarChart /> Gráfico
+                 </Button>
+                  <Button onClick={() => handleShowChart('pie')} variant={activeChart === 'pie' ? 'secondary' : 'outline'} disabled={!hasFetchedData || isLoading}>
+                    <PieChart /> Pizza
+                  </Button>
+               </div>
             </div>
         </div>
         
@@ -211,52 +235,41 @@ export default function PerformancePage() {
              <Table>
                 <TableHeader>
                   <TableRow className="bg-gray-200 hover:bg-gray-200">
-                    <TableHead className="font-bold text-gray-700">Sistema Web</TableHead>
-                    <TableHead className="font-bold text-gray-700">OS</TableHead>
-                    <TableHead className="font-bold text-gray-700">NF</TableHead>
-                    <TableHead className="font-bold text-gray-700">Emissão</TableHead>
-                    <TableHead className="text-right font-bold text-gray-700">Total</TableHead>
-                    <TableHead className="text-right font-bold text-gray-700">Líquido</TableHead>
+                    <TableHead className="font-bold text-gray-700">Período</TableHead>
+                    <TableHead className="text-right font-bold text-gray-700">Receita Líquida</TableHead>
+                    <TableHead className="text-right font-bold text-gray-700">Custo Fixo</TableHead>
                     <TableHead className="text-right font-bold text-gray-700">Comissão</TableHead>
-                    <TableHead className="font-bold text-gray-700">Situação</TableHead>
+                    <TableHead className="text-right font-bold text-gray-700">Lucro</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {Object.entries(groupedData).map(([client, items]) => {
-                    const clientTotal = items.reduce((acc, i) => acc + i.total, 0);
-                    const clientLiquid = items.reduce((acc, i) => acc + i.liquid, 0);
-                    const clientCommission = items.reduce((acc, i) => acc + i.commission, 0);
+                  {Object.entries(groupedData).map(([name, items]) => {
+                    const consultantChartData = chartData.find(c => c.name === name);
+                    if (!consultantChartData) return null;
+
+                    const totalLiquid = items.reduce((acc, i) => acc + i.liquid, 0);
+                    const totalCommission = items.reduce((acc, i) => acc + i.commission, 0);
+                    const profit = totalLiquid - (consultantChartData.fixedCost + totalCommission);
+                    
                     return (
-                      <React.Fragment key={client}>
-                        <TableRow className="bg-gray-50">
-                          <TableCell colSpan={8} className="font-bold text-blue-700">{client}</TableCell>
+                      <React.Fragment key={name}>
+                        <TableRow className="bg-gray-50 font-bold">
+                          <TableCell colSpan={5} className="text-blue-700">{name}</TableCell>
                         </TableRow>
-                        {items.map((item, index) => (
-                          <TableRow key={index}>
-                            <TableCell>{item.system}</TableCell>
-                            <TableCell className="text-orange-500">{item.os}</TableCell>
-                            <TableCell>{item.nf}</TableCell>
-                            <TableCell>{formatDate(item.emission)}</TableCell>
-                            <TableCell className="text-right">{formatCurrency(item.total)}</TableCell>
-                            <TableCell className="text-right">{formatCurrency(item.liquid)}</TableCell>
-                            <TableCell className="text-right">{formatCurrency(item.commission)}</TableCell>
-                            <TableCell className={item.status === 'NF Paga' ? 'text-blue-600 font-bold' : ''}>{item.status}</TableCell>
+                          <TableRow>
+                            <TableCell>{format(date!.from!, 'MMMM yyyy', {})} - {format(date!.to!, 'MMMM yyyy', {})}</TableCell>
+                            <TableCell className="text-right">{formatCurrency(totalLiquid)}</TableCell>
+                            <TableCell className="text-right text-red-500">{formatCurrency(consultantChartData.fixedCost)}</TableCell>
+                            <TableCell className="text-right text-orange-500">{formatCurrency(totalCommission)}</TableCell>
+                            <TableCell className={`text-right font-bold ${profit > 0 ? 'text-green-600' : 'text-red-600'}`}>{formatCurrency(profit)}</TableCell>
                           </TableRow>
-                        ))}
-                         <TableRow className="bg-gray-50 font-bold">
-                            <TableCell colSpan={4}>TOTAL</TableCell>
-                            <TableCell className="text-right">{formatCurrency(clientTotal)}</TableCell>
-                            <TableCell className="text-right">{formatCurrency(clientLiquid)}</TableCell>
-                            <TableCell className="text-right">{formatCurrency(clientCommission)}</TableCell>
-                            <TableCell></TableCell>
-                        </TableRow>
                       </React.Fragment>
                     )
                   })}
                   <TableRow className="bg-gray-200 font-bold">
-                    <TableCell colSpan={4} >TOTAL FINAL</TableCell>
-                    <TableCell className="text-right">{formatCurrency(totals.total)}</TableCell>
+                    <TableCell>SALDO</TableCell>
                     <TableCell className="text-right">{formatCurrency(totals.liquid)}</TableCell>
+                    <TableCell></TableCell>
                     <TableCell className="text-right">{formatCurrency(totals.commission)}</TableCell>
                     <TableCell></TableCell>
                   </TableRow>
@@ -293,7 +306,6 @@ export default function PerformancePage() {
             </Card>
           </div>
         )}
-
       </main>
     </div>
   );

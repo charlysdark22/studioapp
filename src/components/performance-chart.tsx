@@ -1,4 +1,5 @@
 'use client';
+import { memo } from 'react';
 import {
   BarChart,
   Bar,
@@ -62,4 +63,4 @@ const PerformanceChart = ({ data, averageFixedCost, formatCurrency }: Performanc
   );
 };
 
-export default PerformanceChart;
+export default memo(PerformanceChart);
