@@ -102,7 +102,7 @@ export default function PerformancePage() {
   };
 
   const handleFetchData = async () => {
-    if ((selectedConsultants.length === 0 && selectedClients.length === 0) || !date?.from || !date?.to) {
+    if ((reportType === 'consultant' && selectedConsultants.length === 0) || (reportType === 'client' && selectedClients.length === 0) || !date?.from || !date?.to) {
       toast({
         title: translations.performancePage.toastSelectionRequiredTitle,
         description: translations.performancePage.toastSelectionRequiredDescription,
@@ -166,6 +166,15 @@ export default function PerformancePage() {
     }
     setActiveChart(prev => prev === type ? null : type);
   };
+
+  const handleReportTypeChange = (value: ReportType) => {
+    setReportType(value);
+    if (value === 'client') {
+      setSelectedConsultants([]);
+    } else {
+      setSelectedClients([]);
+    }
+  };
   
   const dateLocaleMap = { pt: ptBR, es: es, en: enUS };
   const dateLocale = dateLocaleMap[language];
@@ -187,7 +196,7 @@ export default function PerformancePage() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
                 <div>
                   <label className="text-sm font-medium text-gray-700 block mb-1">{translations.performancePage.reportTypeLabel}</label>
-                  <RadioGroup defaultValue="consultant" onValueChange={(value: ReportType) => setReportType(value)} className="flex gap-4">
+                  <RadioGroup defaultValue="consultant" value={reportType} onValueChange={handleReportTypeChange} className="flex gap-4">
                     <div className="flex items-center space-x-2">
                       <RadioGroupItem value="consultant" id="r-consultant" />
                       <Label htmlFor="r-consultant">{translations.performancePage.byConsultant}</Label>
@@ -236,30 +245,35 @@ export default function PerformancePage() {
                     </PopoverContent>
                   </Popover>
                </div>
-
-               <div className="flex-1 min-w-[200px]">
-                 <label className="text-sm font-medium text-gray-700 block mb-1">{translations.performancePage.consultantsLabel}</label>
-                 <MultiSelect
+                
+               {reportType === 'consultant' && (
+                <div className="flex-1 min-w-[200px]">
+                  <label className="text-sm font-medium text-gray-700 block mb-1">{translations.performancePage.consultantsLabel}</label>
+                  <MultiSelect
                     options={consultantOptions}
                     value={selectedConsultants}
                     onChange={setSelectedConsultants}
                     labelledBy={translations.performancePage.consultantsLabel}
-                     overrideStrings={multiSelectStrings}
+                    overrideStrings={multiSelectStrings}
                     className="w-full"
                   />
-               </div>
+                </div>
+               )}
                
-                <div className="flex-1 min-w-[200px]">
-                 <label className="text-sm font-medium text-gray-700 block mb-1">{translations.performancePage.clientsLabel}</label>
-                 <MultiSelect
-                    options={clientOptions}
-                    value={selectedClients}
-                    onChange={setSelectedClients}
-                    labelledBy={translations.performancePage.clientsLabel}
-                     overrideStrings={multiSelectStrings}
-                    className="w-full"
-                  />
-               </div>
+               {reportType === 'client' && (
+                 <div className="flex-1 min-w-[200px]">
+                  <label className="text-sm font-medium text-gray-700 block mb-1">{translations.performancePage.clientsLabel}</label>
+                  <MultiSelect
+                      options={clientOptions}
+                      value={selectedClients}
+                      onChange={setSelectedClients}
+                      labelledBy={translations.performancePage.clientsLabel}
+                      overrideStrings={multiSelectStrings}
+                      className="w-full"
+                    />
+                 </div>
+                )}
+
 
                <div className="flex gap-2 flex-wrap justify-start col-start-1 lg:col-start-auto">
                  <Button onClick={handleFetchData} disabled={isLoading}>

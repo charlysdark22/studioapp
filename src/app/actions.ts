@@ -97,7 +97,15 @@ const PerformanceRequestSchema = z.object({
   from: z.date(),
   to: z.date(),
   reportType: z.enum(['consultant', 'client']),
-}).refine(data => data.consultants.length > 0 || data.clients.length > 0, {
+}).refine(data => {
+    if (data.reportType === 'consultant') {
+        return data.consultants.length > 0;
+    }
+    if (data.reportType === 'client') {
+        return data.clients.length > 0;
+    }
+    return false;
+}, {
     message: "Debe seleccionar al menos un consultor o un cliente.",
 });
 
@@ -105,8 +113,8 @@ const PerformanceRequestSchema = z.object({
 export async function getPerformanceData(request: z.infer<typeof PerformanceRequestSchema>) {
     const validation = PerformanceRequestSchema.safeParse(request);
     if (!validation.success) {
-        console.error("Invalid request to getPerformanceData:", validation.error.flatten());
-        throw new Error("Solicitud inválida. Faltan parámetros o son incorrectos.");
+        // Devuelve un error más específico para la UI
+        throw new Error("Por favor, seleccione al menos una opción para el reporte.");
     }
 
     const { consultants, clients, from, to, reportType } = validation.data;
@@ -115,8 +123,9 @@ export async function getPerformanceData(request: z.infer<typeof PerformanceRequ
         const emissionDate = new Date(d.emission);
         const isDateInRange = emissionDate >= from && emissionDate <= to;
         
-        const isConsultantSelected = consultants.length === 0 || consultants.includes(d.name);
-        const isClientSelected = clients.length === 0 || clients.includes(d.client);
+        // Filtra por consultor o cliente solo si el tipo de reporte corresponde
+        const isConsultantSelected = reportType === 'consultant' ? consultants.includes(d.name) : true;
+        const isClientSelected = reportType === 'client' ? clients.includes(d.client) : true;
         
         return isDateInRange && isConsultantSelected && isClientSelected;
     });
@@ -141,19 +150,14 @@ export async function getPerformanceData(request: z.infer<typeof PerformanceRequ
         entry.netRevenue += item.liquid;
         entry.commission += commissionValue;
         
-        // Si el reporte es por cliente, acumulamos los costos fijos de los consultores involucrados
-        if (reportType === 'client') {
-             // Esto es una simplificación. Si varios consultores trabajan para un cliente,
-             // podríamos querer sumar sus costos fijos. O no. Por ahora, lo dejamos en 0.
-             // Para un cálculo más preciso, la lógica de negocio debe ser definida.
-             // Por simplicidad, el costo fijo solo tiene sentido real en la vista por consultor.
-        }
+        // Si el reporte es por cliente, el costo fijo se mantiene en 0 como se definió.
     });
     
     const tableData = Array.from(processedData.values());
     
     let relevantNames: string[];
     if (reportType === 'consultant') {
+        // Si no se seleccionó ninguno, mostramos todos los que tienen datos.
         relevantNames = consultants.length > 0 ? consultants : tableData.map(d => d.name);
     } else { // client
         relevantNames = clients.length > 0 ? clients : tableData.map(d => d.name);
