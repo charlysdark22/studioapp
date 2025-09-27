@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Briefcase, User, LogOut, Building, ShoppingCart, DollarSign, Home, Languages } from 'lucide-react';
+import { Briefcase, User, LogOut, Building, ShoppingCart, DollarSign, Home } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/context/language-context';
 import {
@@ -13,9 +13,23 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Button } from './ui/button';
 
+// Nuevo componente para el icono de idioma dinámico
+const LanguageIcon = () => {
+    const { language } = useLanguage();
+
+    const languageIcons: { [key: string]: React.ReactNode } = {
+        pt: <span className="text-xl">🇧🇷</span>,
+        es: <span className="text-xl">🇪🇸</span>,
+        en: <span className="text-xl">🇬🇧</span>,
+    };
+
+    return languageIcons[language] || null;
+}
+
+
 export default function MainHeader() {
   const pathname = usePathname();
-  const { language, setLanguage, translations } = useLanguage();
+  const { setLanguage, translations } = useLanguage();
 
   const navLinks = [
     { href: '/agence', icon: Building, label: translations.mainHeader.agence },
@@ -57,19 +71,19 @@ export default function MainHeader() {
              <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                     <Button variant="outline" size="icon">
-                        <Languages />
+                        <LanguageIcon />
                         <span className="sr-only">Change language</span>
                     </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
                     <DropdownMenuItem onClick={() => setLanguage('pt')}>
-                        Português
+                        🇧🇷 Português
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => setLanguage('es')}>
-                        Español
+                        🇪🇸 Español
                     </DropdownMenuItem>
                      <DropdownMenuItem onClick={() => setLanguage('en')}>
-                        English
+                        🇬🇧 English
                     </DropdownMenuItem>
                 </DropdownMenuContent>
             </DropdownMenu>
