@@ -1,50 +1,61 @@
 'use server';
-
+import mysql from 'mysql2/promise';
 import { z } from 'zod';
 
-// Datos de ejemplo
-const consultantsData = [
-  { co_usuario: 'agonzalez', no_usuario: 'Aguebo Gonzalez' },
-  { co_usuario: 'alessandro.yamada', no_usuario: 'alessandro.yamada' },
-  { co_usuario: 'bhurtado', no_usuario: 'Braulio Hurtado' },
-  { co_usuario: 'carlos.arruda', no_usuario: 'carlos.arruda' },
-  { co_usuario: 'carlos.faria', no_usuario: 'Carlos Faria' },
-  { co_usuario: 'carlos.viana', no_usuario: 'carlos.viana' },
-  { co_usuario: 'cristiane.florio', no_usuario: 'cristiane.florio' },
-  { co_usuario: 'cyntia.nakamura', no_usuario: 'cyntia.nakamura' },
-  { co_usuario: 'daniel.braga', no_usuario: 'daniel.braga' },
-  { co_usuario: 'denis.santos', no_usuario: 'denis.santos' },
-  { co_usuario: 'dvicente', no_usuario: 'David Vicente' },
-  { co_usuario: 'eduardo.botelho', no_usuario: 'eduardo.botelho' },
-  { co_usuario: 'edy.bruno', no_usuario: 'edy.bruno' },
-  { co_usuario: 'fabio.stevanelli', no_usuario: 'fabio.stevanelli' },
-  { co_usuario: 'frederico.zapelini', no_usuario: 'frederico.zapelini' },
-  { co_usuario: 'gustavo.gomes', no_usuario: 'gustavo.gomes' },
-  { co_usuario: 'jesliel.rocha', no_usuario: 'jesliel.rocha' },
-  { co_usuario: 'marco.malaquias', no_usuario: 'marco.malaquias' },
-  { co_usuario: 'mauricio.costa', no_usuario: 'mauricio.costa' },
-  { co_usuario: 'nivaldo.junior', no_usuario: 'nivaldo.junior' },
-  { co_usuario: 'nixon.santos', no_usuario: 'nixon.santos' },
-  { co_usuario: 'ricardo.martins', no_usuario: 'ricardo.martins' },
-  { co_usuario: 'ricardo.rubini', no_usuario: 'ricardo.rubini' },
-  { co_usuario: 'rodrigo.moralles', no_usuario: 'rodrigo.moralles' },
-  { co_usuario: 'rodrigo.oliveira', no_usuario: 'rodrigo.oliveira' },
-  { co_usuario: 'rodrigo.sousa', no_usuario: 'rodrigo.sousa' },
-  { co_usuario: 'rui.hayashi', no_usuario: 'rui.hayashi' }
-];
+// Configuración de la conexión a la base de datos
+// Lee las credenciales desde las variables de entorno (archivo .env)
+const dbConfig = {
+  host: process.env.DB_HOST,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_DATABASE,
+};
 
-const performanceData: any[] = [];
+async function getConnection() {
+  const connection = await mysql.createConnection(dbConfig);
+  return connection;
+}
 
 
 export async function getConsultants() {
-  // Simula: SELECT u.co_usuario, u.no_usuario FROM cao_usuario u JOIN ...
-  return consultantsData;
+  const connection = await getConnection();
+  try {
+    // IMPORTANTE: Reemplaza esta consulta con tu consulta real para obtener los consultores.
+    // Asegúrate de seleccionar las columnas 'co_usuario' y 'no_usuario'.
+    const [rows] = await connection.execute(
+      "SELECT co_usuario, no_usuario FROM cao_usuario WHERE co_tipo_usuario IN (0, 1, 2)"
+    );
+    return rows as { co_usuario: string; no_usuario: string }[];
+  } catch (error) {
+    console.error('Error fetching consultants:', error);
+    return [];
+  } finally {
+    await connection.end();
+  }
 }
 
 export async function getClients() {
-  const clientNames = performanceData.map(d => d.client);
-  const uniqueClientNames = [...new Set(clientNames)];
-  return uniqueClientNames.map(name => ({ label: name, value: name }));
+    const connection = await getConnection();
+    try {
+        // IMPORTANTE: Reemplaza esta consulta con tu consulta real para obtener los clientes.
+        // La consulta debe devolver una lista de nombres de clientes únicos.
+        const [rows] = await connection.execute(
+            "SELECT DISTINCT no_fantasia FROM cao_cliente"
+        );
+        
+        // Asumimos que la columna se llama 'no_fantasia'. Ajusta si es diferente.
+        const clients = (rows as { no_fantasia: string }[]).map(row => ({
+            label: row.no_fantasia,
+            value: row.no_fantasia,
+        }));
+        
+        return clients;
+    } catch (error) {
+        console.error('Error fetching clients:', error);
+        return [];
+    } finally {
+        await connection.end();
+    }
 }
 
 
@@ -54,31 +65,85 @@ const PerformanceRequestSchema = z.object({
   from: z.date(),
   to: z.date(),
   reportType: z.enum(['consultant', 'client']),
-}).refine(data => {
-    if (data.reportType === 'consultant') {
-        return data.consultants.length > 0;
-    }
-    if (data.reportType === 'client') {
-        return data.clients.length > 0;
-    }
-    return false;
-}, {
-    message: "Debe seleccionar al menos un consultor o un cliente.",
 });
 
 
 export async function getPerformanceData(request: z.infer<typeof PerformanceRequestSchema>) {
     const validation = PerformanceRequestSchema.safeParse(request);
     if (!validation.success) {
-        // Devuelve un error más específico para la UI
-        throw new Error("Por favor, seleccione al menos una opción para el reporte.");
+        throw new Error("Invalid request parameters.");
     }
+    
+    const { consultants, clients, from, to, reportType } = validation.data;
 
-    // Como no hay datos de rendimiento, devolvemos una estructura vacía.
-    // En un futuro, aquí se haría la consulta a la base de datos real.
-    return {
-        tableData: [],
-        chartData: [],
-        averageFixedCost: 0,
-    };
+    const fromDate = from.toISOString().split('T')[0];
+    const toDate = to.toISOString().split('T')[0];
+    
+    const connection = await getConnection();
+    try {
+        // IMPORTANTE: Esta es una consulta de EJEMPLO.
+        // Deberás construir una consulta compleja que una las tablas:
+        // cao_fatura, cao_os, cao_salario y cao_usuario
+        // para calcular los datos de rendimiento.
+        
+        let query = `
+            SELECT 
+                ${reportType === 'consultant' ? 'u.no_usuario as name' : 'c.no_fantasia as name'},
+                SUM(f.valor - (f.valor * f.total_imp_inc / 100)) AS netRevenue,
+                ${reportType === 'consultant' ? 's.brut_salario AS fixedCost' : '0 as fixedCost'},
+                SUM((f.valor - (f.valor * f.total_imp_inc / 100)) * f.comissao_cn / 100) AS commission
+            FROM cao_fatura f
+            JOIN cao_os os ON f.co_os = os.co_os
+            JOIN cao_usuario u ON os.co_usuario = u.co_usuario
+            JOIN cao_cliente c ON f.co_cliente = c.co_cliente
+            LEFT JOIN cao_salario s ON u.co_usuario = s.co_usuario
+            WHERE f.data_emissao BETWEEN ? AND ?
+        `;
+
+        const params: (string | string[])[] = [fromDate, toDate];
+
+        if (reportType === 'consultant' && consultants.length > 0) {
+            query += ` AND u.no_usuario IN (?)`;
+            params.push(consultants);
+        }
+
+        if (reportType === 'client' && clients.length > 0) {
+            query += ` AND c.no_fantasia IN (?)`;
+            params.push(clients);
+        }
+
+        query += ` GROUP BY name ${reportType === 'consultant' ? ', s.brut_salario' : ''}`;
+        
+        const [rows] = await connection.execute(query, params);
+
+        const tableData = (rows as any[]).map(row => ({
+            name: row.name,
+            netRevenue: parseFloat(row.netRevenue) || 0,
+            fixedCost: parseFloat(row.fixedCost) || 0,
+            commission: parseFloat(row.commission) || 0,
+        }));
+        
+        const chartData = tableData.map(item => ({
+            name: item.name,
+            netRevenue: item.netRevenue,
+            fixedCost: item.fixedCost,
+            commission: item.commission,
+        }));
+
+        // El cálculo del costo fijo promedio es complejo y depende de la lógica de negocio.
+        // Por ahora, se deja en 0.
+        const averageFixedCost = 0;
+
+        return {
+            tableData,
+            chartData,
+            averageFixedCost,
+        };
+
+    } catch (error) {
+        console.error("Error fetching performance data:", error);
+        throw new Error('Failed to fetch performance data from the database.');
+    } finally {
+        await connection.end();
+    }
 }
