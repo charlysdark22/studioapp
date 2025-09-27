@@ -5,30 +5,36 @@ import { z } from 'zod';
 // Lee la URL de conexión desde las variables de entorno
 const connectionString = process.env.DATABASE_URL;
 
-// Configuración de la conexión a la base de datos de PostgreSQL (Supabase)
 let pool: Pool;
 
+// Solo crea el pool de conexiones si la variable de entorno está presente.
 if (connectionString) {
-  pool = new Pool({ connectionString });
+  pool = new Pool({
+    connectionString,
+  });
 } else {
-  console.error("DATABASE_URL is not set. Please check your .env file.");
-  // Usamos un pool 'dummy' para evitar que la aplicación se bloquee en el inicio.
-  // Las funciones lanzarán un error si se intentan usar sin la URL.
-  pool = new Pool(); 
+  // Si no está, la aplicación no podrá conectarse. Esto es intencional.
+  // El error te recordará que necesitas configurar tu .env
+  console.error("DATABASE_URL environment variable is not set. Please create an .env file with your Supabase connection string.");
 }
 
+// Función auxiliar para obtener un cliente de la base de datos
 async function getClient() {
-  if (!connectionString) {
-    throw new Error('Database connection string is not configured. Please set DATABASE_URL in your .env file.');
+  if (!pool) {
+    throw new Error('Database connection pool is not available. Please check your DATABASE_URL environment variable.');
   }
   const client = await pool.connect();
   return client;
 }
 
+/**
+ * Obtiene la lista de consultores de la base de datos.
+ */
 export async function getConsultants() {
   try {
     const client = await getClient();
     try {
+      // TU CONSULTA SQL PARA OBTENER CONSULTORES
       const res = await client.query(
         "SELECT co_usuario, no_usuario FROM cao_usuario WHERE co_tipo_usuario IN (0, 1, 2)"
       );
@@ -38,15 +44,19 @@ export async function getConsultants() {
     }
   } catch (error) {
     console.error('Error fetching consultants:', error);
-    // Devuelve un array vacío si hay un error para que la UI no se rompa.
+    // Devuelve un array vacío en caso de error para no bloquear la UI.
     return [];
   }
 }
 
+/**
+ * Obtiene la lista de clientes de la base de datos.
+ */
 export async function getClients() {
     try {
         const client = await getClient();
         try {
+            // TU CONSULTA SQL PARA OBTENER CLIENTES
             const res = await client.query(
                 "SELECT DISTINCT no_fantasia FROM cao_cliente"
             );
@@ -65,6 +75,7 @@ export async function getClients() {
 }
 
 
+// Esquema de validación para los parámetros de entrada del informe
 const PerformanceRequestSchema = z.object({
   consultants: z.array(z.string()),
   clients: z.array(z.string()),
@@ -73,7 +84,9 @@ const PerformanceRequestSchema = z.object({
   reportType: z.enum(['consultant', 'client']),
 });
 
-
+/**
+ * Obtiene los datos de rendimiento para el informe.
+ */
 export async function getPerformanceData(request: z.infer<typeof PerformanceRequestSchema>) {
     const validation = PerformanceRequestSchema.safeParse(request);
     if (!validation.success) {
@@ -82,12 +95,15 @@ export async function getPerformanceData(request: z.infer<typeof PerformanceRequ
     
     const { consultants, clients, from, to, reportType } = validation.data;
 
+    // Formatea las fechas al formato YYYY-MM-DD
     const fromDate = from.toISOString().split('T')[0];
     const toDate = to.toISOString().split('T')[0];
     
     try {
         const client = await getClient();
         try {
+            // TU CONSULTA SQL PARA OBTENER DATOS DE RENDIMIENTO
+            // Esta consulta es compleja y probablemente necesites ajustarla
             let query = `
                 SELECT 
                     ${reportType === 'consultant' ? 'u.no_usuario as name' : 'c.no_fantasia as name'},
@@ -127,14 +143,8 @@ export async function getPerformanceData(request: z.infer<typeof PerformanceRequ
                 commission: parseFloat(row.commission) || 0,
             }));
             
-            const chartData = tableData.map(item => ({
-                name: item.name,
-                netRevenue: item.netRevenue,
-                fixedCost: item.fixedCost,
-                commission: item.commission,
-            }));
-
-            const averageFixedCost = 0;
+            const chartData = tableData;
+            const averageFixedCost = 0; // Este valor debería calcularse si es necesario
 
             return {
                 tableData,
