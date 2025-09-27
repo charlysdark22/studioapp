@@ -5,78 +5,35 @@ import { z } from 'zod';
 // Datos de ejemplo
 const consultantsData = [
   { co_usuario: 'agonzalez', no_usuario: 'Aguebo Gonzalez' },
+  { co_usuario: 'alessandro.yamada', no_usuario: 'alessandro.yamada' },
   { co_usuario: 'bhurtado', no_usuario: 'Braulio Hurtado' },
-  { co_usuario: 'cfaria', no_usuario: 'Carlos Faria' },
+  { co_usuario: 'carlos.arruda', no_usuario: 'carlos.arruda' },
+  { co_usuario: 'carlos.faria', no_usuario: 'Carlos Faria' },
+  { co_usuario: 'carlos.viana', no_usuario: 'carlos.viana' },
+  { co_usuario: 'cristiane.florio', no_usuario: 'cristiane.florio' },
+  { co_usuario: 'cyntia.nakamura', no_usuario: 'cyntia.nakamura' },
+  { co_usuario: 'daniel.braga', no_usuario: 'daniel.braga' },
+  { co_usuario: 'denis.santos', no_usuario: 'denis.santos' },
   { co_usuario: 'dvicente', no_usuario: 'David Vicente' },
+  { co_usuario: 'eduardo.botelho', no_usuario: 'eduardo.botelho' },
+  { co_usuario: 'edy.bruno', no_usuario: 'edy.bruno' },
+  { co_usuario: 'fabio.stevanelli', no_usuario: 'fabio.stevanelli' },
+  { co_usuario: 'frederico.zapelini', no_usuario: 'frederico.zapelini' },
+  { co_usuario: 'gustavo.gomes', no_usuario: 'gustavo.gomes' },
+  { co_usuario: 'jesliel.rocha', no_usuario: 'jesliel.rocha' },
+  { co_usuario: 'marco.malaquias', no_usuario: 'marco.malaquias' },
+  { co_usuario: 'mauricio.costa', no_usuario: 'mauricio.costa' },
+  { co_usuario: 'nivaldo.junior', no_usuario: 'nivaldo.junior' },
+  { co_usuario: 'nixon.santos', no_usuario: 'nixon.santos' },
+  { co_usuario: 'ricardo.martins', no_usuario: 'ricardo.martins' },
+  { co_usuario: 'ricardo.rubini', no_usuario: 'ricardo.rubini' },
+  { co_usuario: 'rodrigo.moralles', no_usuario: 'rodrigo.moralles' },
+  { co_usuario: 'rodrigo.oliveira', no_usuario: 'rodrigo.oliveira' },
+  { co_usuario: 'rodrigo.sousa', no_usuario: 'rodrigo.sousa' },
+  { co_usuario: 'rui.hayashi', no_usuario: 'rui.hayashi' }
 ];
 
-const performanceData = [
-    {
-        name: 'Aguebo Gonzalez',
-        client: 'Toyota do Brasil',
-        system: 'Fleet Control',
-        os: 'Desenvolvimento e Implantação',
-        nf: '373627',
-        emission: '2007-01-17',
-        total: 3963.77,
-        liquid: 3720.00,
-        commissionPercentage: 10,
-        fixedCost: 1500,
-        status: 'NF Emitida',
-    },
-    {
-        name: 'Aguebo Gonzalez',
-        client: 'Toyota do Brasil',
-        system: 'SOS',
-        os: 'Upgrade de Performance',
-        nf: '373628',
-        emission: '2007-01-20',
-        total: 2876.43,
-        liquid: 2500.00,
-        commissionPercentage: 10,
-        fixedCost: 1500,
-        status: 'NF Paga',
-    },
-    {
-        name: 'Braulio Hurtado',
-        client: 'Renault',
-        system: 'SGV Compact',
-        os: 'Desenvolvimento e Implantação',
-        nf: '373610',
-        emission: '2007-01-15',
-        total: 3963.77,
-        liquid: 3720.00,
-        commissionPercentage: 8,
-        fixedCost: 2000,
-        status: 'NF Emitida',
-    },
-     {
-        name: 'Carlos Faria',
-        client: 'Nissan',
-        system: 'CRM Integrado',
-        os: 'Manutenção',
-        nf: '373699',
-        emission: '2007-01-25',
-        total: 5500.00,
-        liquid: 5100.00,
-        commissionPercentage: 12,
-        fixedCost: 1800,
-        status: 'NF Paga',
-    },
-    {
-        name: 'Braulio Hurtado',
-        client: 'Toyota do Brasil',
-        system: 'Fleet Control',
-        os: 'Manutenção',
-        nf: '373698',
-        emission: '2007-01-28',
-        total: 1200.00,
-        liquid: 1100.00,
-        commissionPercentage: 8,
-        fixedCost: 2000,
-        status: 'NF Paga',
-    }
-];
+const performanceData: any[] = [];
 
 
 export async function getConsultants() {
@@ -117,76 +74,11 @@ export async function getPerformanceData(request: z.infer<typeof PerformanceRequ
         throw new Error("Por favor, seleccione al menos una opción para el reporte.");
     }
 
-    const { consultants, clients, from, to, reportType } = validation.data;
-    
-    const filteredRawData = performanceData.filter(d => {
-        const emissionDate = new Date(d.emission);
-        const isDateInRange = emissionDate >= from && emissionDate <= to;
-        
-        // Filtra por consultor o cliente solo si el tipo de reporte corresponde
-        const isConsultantSelected = reportType === 'consultant' ? consultants.includes(d.name) : true;
-        const isClientSelected = reportType === 'client' ? clients.includes(d.client) : true;
-        
-        return isDateInRange && isConsultantSelected && isClientSelected;
-    });
-
-    const processedData = new Map<string, { netRevenue: number; fixedCost: number; commission: number; name: string }>();
-
-    filteredRawData.forEach(item => {
-        const key = reportType === 'consultant' ? item.name : item.client;
-        const commissionValue = item.liquid * (item.commissionPercentage / 100);
-
-        if (!processedData.has(key)) {
-            processedData.set(key, {
-                name: key,
-                netRevenue: 0,
-                // El costo fijo es por consultor, así que solo lo asignamos si el reporte es por consultor
-                fixedCost: reportType === 'consultant' ? item.fixedCost : 0, 
-                commission: 0,
-            });
-        }
-
-        const entry = processedData.get(key)!;
-        entry.netRevenue += item.liquid;
-        entry.commission += commissionValue;
-        
-        // Si el reporte es por cliente, el costo fijo se mantiene en 0 como se definió.
-    });
-    
-    const tableData = Array.from(processedData.values());
-    
-    let relevantNames: string[];
-    if (reportType === 'consultant') {
-        // Si no se seleccionó ninguno, mostramos todos los que tienen datos.
-        relevantNames = consultants.length > 0 ? consultants : tableData.map(d => d.name);
-    } else { // client
-        relevantNames = clients.length > 0 ? clients : tableData.map(d => d.name);
-    }
-
-
-    const chartData = relevantNames.map(name => {
-        const data = processedData.get(name);
-        if (data) {
-            return data;
-        }
-        // Si una entidad seleccionada (consultor/cliente) no tiene datos, devolver ceros.
-        if (reportType === 'consultant') {
-            const fixedCost = performanceData.find(p => p.name === name)?.fixedCost || 0;
-            return { name, netRevenue: 0, commission: 0, fixedCost };
-        } else {
-            return { name, netRevenue: 0, commission: 0, fixedCost: 0 };
-        }
-    }).filter(Boolean) as { name: string; netRevenue: number; fixedCost: number; commission: number; }[];
-
-
-    const totalFixedCost = chartData.reduce((sum, item) => sum + item.fixedCost, 0);
-    const averageFixedCost = reportType === 'consultant' && chartData.length > 0 
-        ? totalFixedCost / chartData.length 
-        : 0;
-
+    // Como no hay datos de rendimiento, devolvemos una estructura vacía.
+    // En un futuro, aquí se haría la consulta a la base de datos real.
     return {
-        tableData: tableData,
-        chartData,
-        averageFixedCost,
+        tableData: [],
+        chartData: [],
+        averageFixedCost: 0,
     };
 }
