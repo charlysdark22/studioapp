@@ -23,7 +23,7 @@ import { DateRange } from 'react-day-picker';
 import { MultiSelect, Option } from 'react-multi-select-component';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Calendar } from '@/components/ui/calendar';
-import { getConsultants, getPerformanceData } from '../actions';
+import { getConsultants, getClients, getPerformanceData } from '../actions';
 import MainHeader from '@/components/main-header';
 import { useToast } from '@/hooks/use-toast';
 import { useLanguage } from '@/context/language-context';
@@ -48,7 +48,9 @@ type ChartDataType = {
 export default function PerformancePage() {
   const { language, translations } = useLanguage();
   const [consultantOptions, setConsultantOptions] = useState<Option[]>([]);
+  const [clientOptions, setClientOptions] = useState<Option[]>([]);
   const [selectedConsultants, setSelectedConsultants] = useState<Option[]>([]);
+  const [selectedClients, setSelectedClients] = useState<Option[]>([]);
   const [date, setDate] = useState<DateRange | undefined>({
     from: new Date(2007, 0, 1),
     to: new Date(2007, 0, 31),
@@ -65,11 +67,12 @@ export default function PerformancePage() {
 
 
   useEffect(() => {
-    async function loadConsultants() {
-      const consultants = await getConsultants();
+    async function loadInitialData() {
+      const [consultants, clients] = await Promise.all([getConsultants(), getClients()]);
       setConsultantOptions(consultants.map(c => ({ label: c.no_usuario, value: c.no_usuario })));
+      setClientOptions(clients);
     }
-    loadConsultants();
+    loadInitialData();
   }, []);
 
   const formatCurrency = (value: number) => {
@@ -95,7 +98,7 @@ export default function PerformancePage() {
   };
 
   const handleFetchData = async () => {
-    if (selectedConsultants.length === 0 || !date?.from || !date?.to) {
+    if ((selectedConsultants.length === 0 && selectedClients.length === 0) || !date?.from || !date?.to) {
       toast({
         title: translations.performancePage.toastSelectionRequiredTitle,
         description: translations.performancePage.toastSelectionRequiredDescription,
@@ -111,6 +114,7 @@ export default function PerformancePage() {
     try {
       const request = {
         consultants: selectedConsultants.map(c => c.label),
+        clients: selectedClients.map(c => c.label),
         from: date.from,
         to: date.to,
       };
@@ -175,15 +179,15 @@ export default function PerformancePage() {
       <main className="flex-1 container mx-auto p-4">
         <h2 className="text-lg font-semibold text-gray-800 mb-2">{translations.performancePage.title}</h2>
         <div className="bg-white p-4 rounded-t-lg border">
-            <div className="flex flex-wrap items-end gap-4">
-               <div className="flex-1 min-w-[250px]">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 items-end">
+               <div className="flex-1 min-w-[200px]">
                   <label className="text-sm font-medium text-gray-700 block mb-1">{translations.performancePage.periodLabel}</label>
                    <Popover>
                     <PopoverTrigger asChild>
                       <Button
                         id="date"
                         variant={'outline'}
-                        className="w-full md:w-[300px] justify-start text-left font-normal"
+                        className="w-full justify-start text-left font-normal"
                       >
                         <CalendarIcon className="mr-2 h-4 w-4" />
                         {date?.from ? (
@@ -213,7 +217,8 @@ export default function PerformancePage() {
                     </PopoverContent>
                   </Popover>
                </div>
-               <div className="flex-1 min-w-[250px]">
+
+               <div className="flex-1 min-w-[200px]">
                  <label className="text-sm font-medium text-gray-700 block mb-1">{translations.performancePage.consultantsLabel}</label>
                  <MultiSelect
                     options={consultantOptions}
@@ -224,7 +229,20 @@ export default function PerformancePage() {
                     className="w-full"
                   />
                </div>
-               <div className="flex gap-2 flex-wrap">
+               
+                <div className="flex-1 min-w-[200px]">
+                 <label className="text-sm font-medium text-gray-700 block mb-1">{translations.performancePage.clientsLabel}</label>
+                 <MultiSelect
+                    options={clientOptions}
+                    value={selectedClients}
+                    onChange={setSelectedClients}
+                    labelledBy={translations.performancePage.clientsLabel}
+                     overrideStrings={multiSelectStrings}
+                    className="w-full"
+                  />
+               </div>
+
+               <div className="flex gap-2 flex-wrap justify-start">
                  <Button onClick={handleFetchData} disabled={isLoading}>
                     {isLoading ? translations.performancePage.loadingButton : translations.performancePage.reportButton}
                  </Button>

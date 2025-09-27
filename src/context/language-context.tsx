@@ -1,6 +1,9 @@
 'use client';
 
 import React, { createContext, useState, useContext, ReactNode, useEffect } from 'react';
+import { Inter } from "next/font/google";
+
+const inter = Inter({ subsets: ["latin"] });
 
 type Language = 'pt' | 'es' | 'en';
 
@@ -80,12 +83,13 @@ const translationsData: { [key in Language]: Translations } = {
         periodLabel: 'Período',
         datePlaceholder: 'Selecione um período',
         consultantsLabel: 'Consultores',
+        clientsLabel: 'Clientes',
         reportButton: 'Relatório',
         loadingButton: 'Buscando...',
         chartButton: 'Gráfico',
         pieButton: 'Pizza',
         loadingData: 'Carregando dados...',
-        welcomeMessage: "Por favor, selecione um ou mais consultores e um período, e depois clique em 'Relatório' para ver os resultados.",
+        welcomeMessage: "Por favor, selecione consultores e/ou clientes e um período, e depois clique em 'Relatório' para ver os resultados.",
         noDataMessage: 'Não foram encontrados dados para os filtros selecionados.',
         barChartTitle: 'Desempenho dos Consultores',
         pieChartTitle: 'Participação na Receita Líquida',
@@ -98,7 +102,7 @@ const translationsData: { [key in Language]: Translations } = {
             profit: 'Lucro'
         },
         toastSelectionRequiredTitle: 'Seleção requerida',
-        toastSelectionRequiredDescription: 'Por favor, selecione ao menos um consultor e um período de datas.',
+        toastSelectionRequiredDescription: 'Por favor, selecione ao menos um consultor ou cliente e um período de datas.',
         toastNoResultsTitle: 'Sem resultados',
         toastNoResultsDescription: 'Não se encontraram dados para os filtros selecionados.',
         toastFetchError: 'Ocorreu um erro ao buscar os dados.',
@@ -183,12 +187,13 @@ const translationsData: { [key in Language]: Translations } = {
         periodLabel: 'Período',
         datePlaceholder: 'Seleccione un período',
         consultantsLabel: 'Consultores',
-        reportButton: 'Relatório',
+        clientsLabel: 'Clientes',
+        reportButton: 'Relatorio',
         loadingButton: 'Buscando...',
         chartButton: 'Gráfico',
-        pieButton: 'Pizza',
+        pieButton: 'Torta',
         loadingData: 'Cargando datos...',
-        welcomeMessage: 'Por favor, seleccione uno o más consultores y un período, y luego haga clic en "Relatório" para ver los resultados.',
+        welcomeMessage: 'Por favor, seleccione consultores y/o clientes y un período, y luego haga clic en "Relatorio" para ver los resultados.',
         noDataMessage: 'No se encontraron datos para los filtros seleccionados.',
         barChartTitle: 'Desempeño de los Consultores',
         pieChartTitle: 'Participación en los Ingresos Netos',
@@ -201,7 +206,7 @@ const translationsData: { [key in Language]: Translations } = {
             profit: 'Ganancia'
         },
         toastSelectionRequiredTitle: 'Selección requerida',
-        toastSelectionRequiredDescription: 'Por favor, seleccione al menos un consultor y un período de fechas.',
+        toastSelectionRequiredDescription: 'Por favor, seleccione al menos un consultor o cliente y un período de fechas.',
         toastNoResultsTitle: 'Sin resultados',
         toastNoResultsDescription: 'No se encontraron datos para los filtros seleccionados.',
         toastFetchError: 'Ocurrió un error al buscar los datos.',
@@ -286,12 +291,13 @@ const translationsData: { [key in Language]: Translations } = {
         periodLabel: 'Period',
         datePlaceholder: 'Select a period',
         consultantsLabel: 'Consultants',
+        clientsLabel: 'Clients',
         reportButton: 'Report',
         loadingButton: 'Fetching...',
         chartButton: 'Chart',
         pieButton: 'Pie',
         loadingData: 'Loading data...',
-        welcomeMessage: "Please select one or more consultants and a period, then click 'Report' to see the results.",
+        welcomeMessage: "Please select consultants and/or clients and a period, then click 'Report' to see the results.",
         noDataMessage: 'No data found for the selected filters.',
         barChartTitle: 'Consultant Performance',
         pieChartTitle: 'Net Revenue Share',
@@ -304,7 +310,7 @@ const translationsData: { [key in Language]: Translations } = {
             profit: 'Profit'
         },
         toastSelectionRequiredTitle: 'Selection Required',
-        toastSelectionRequiredDescription: 'Please select at least one consultant and a date range.',
+        toastSelectionRequiredDescription: 'Please select at least one consultant or client and a date range.',
         toastNoResultsTitle: 'No Results',
         toastNoResultsDescription: 'No data was found for the selected filters.',
         toastFetchError: 'An error occurred while fetching the data.',
@@ -332,33 +338,30 @@ export const LanguageProvider = ({ children }: { children: ReactNode }) => {
   const [language, setLanguage] = useState<Language>('pt');
 
   useEffect(() => {
-    // This effect runs only on the client
     const storedLang = localStorage.getItem('language') as Language | null;
     if (storedLang && translationsData[storedLang]) {
       setLanguage(storedLang);
     }
   }, []);
-
+  
   useEffect(() => {
-    // This effect also runs only on the client, after the component mounts
-    if (typeof window !== 'undefined') {
-        document.documentElement.lang = language;
-    }
-  }, [language]);
-
+    document.body.className = `${inter.className} bg-gray-100`;
+  }, []);
 
   const setLanguageWrapper = (lang: Language) => {
     setLanguage(lang);
-    if (typeof window !== 'undefined') {
-        localStorage.setItem('language', lang);
-    }
+    localStorage.setItem('language', lang);
   };
 
   const translations = translationsData[language];
 
   return (
     <LanguageContext.Provider value={{ language, setLanguage: setLanguageWrapper, translations }}>
-      {children}
+      <html lang={language}>
+        <body>
+          {children}
+        </body>
+      </html>
     </LanguageContext.Provider>
   );
 };
