@@ -29,9 +29,10 @@ interface PerformanceChartProps {
     commission: string;
     averageFixedCost: string;
   }
+  showFixedCost: boolean;
 }
 
-const PerformanceChart = ({ data, averageFixedCost, formatCurrency, translations }: PerformanceChartProps) => {
+const PerformanceChart = ({ data, averageFixedCost, formatCurrency, translations, showFixedCost }: PerformanceChartProps) => {
   const chartData = data.map(item => ({
     name: item.name,
     [translations.netRevenue]: item.netRevenue,
@@ -56,14 +57,16 @@ const PerformanceChart = ({ data, averageFixedCost, formatCurrency, translations
         <Tooltip formatter={(value) => formatCurrency(Number(value))} />
         <Legend />
         <Bar dataKey={translations.netRevenue} fill="#82ca9d" />
-        <Bar dataKey={translations.fixedCost} fill="#8884d8" />
+        {showFixedCost && <Bar dataKey={translations.fixedCost} fill="#8884d8" />}
         <Bar dataKey={translations.commission} fill="#ffc658" />
-        <ReferenceLine 
-          y={averageFixedCost} 
-          label={{ value: `${translations.averageFixedCost}: ${formatCurrency(averageFixedCost)}`, position: 'insideTopLeft', fill: 'red' }} 
-          stroke="red" 
-          strokeDasharray="3 3" 
-        />
+        {showFixedCost && averageFixedCost > 0 && (
+            <ReferenceLine 
+              y={averageFixedCost} 
+              label={{ value: `${translations.averageFixedCost}: ${formatCurrency(averageFixedCost)}`, position: 'insideTopLeft', fill: 'red' }} 
+              stroke="red" 
+              strokeDasharray="3 3" 
+            />
+        )}
       </BarChart>
     </ResponsiveContainer>
   );

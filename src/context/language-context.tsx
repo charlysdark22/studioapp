@@ -77,6 +77,9 @@ const translationsData: { [key in Language]: Translations } = {
     },
     performancePage: {
         title: 'Performance Comercial',
+        reportTypeLabel: 'Tipo de Relatório',
+        byConsultant: 'Por Consultor',
+        byClient: 'Por Cliente',
         periodLabel: 'Período',
         datePlaceholder: 'Selecione um período',
         consultantsLabel: 'Consultores',
@@ -88,10 +91,12 @@ const translationsData: { [key in Language]: Translations } = {
         loadingData: 'Carregando dados...',
         welcomeMessage: "Por favor, selecione consultores e/ou clientes e um período, e depois clique em 'Relatório' para ver os resultados.",
         noDataMessage: 'Não foram encontrados dados para os filtros selecionados.',
-        barChartTitle: 'Desempenho dos Consultores',
+        barChartTitleConsultant: 'Desempenho dos Consultores',
+        barChartTitleClient: 'Desempenho por Cliente',
         pieChartTitle: 'Participação na Receita Líquida',
         table: {
             consultant: 'Consultor',
+            client: 'Cliente',
             period: 'Período',
             netRevenue: 'Receita Líquida',
             fixedCost: 'Custo Fixo',
@@ -181,6 +186,9 @@ const translationsData: { [key in Language]: Translations } = {
     },
     performancePage: {
         title: 'Desempeño Comercial',
+        reportTypeLabel: 'Tipo de Reporte',
+        byConsultant: 'Por Consultor',
+        byClient: 'Por Cliente',
         periodLabel: 'Período',
         datePlaceholder: 'Seleccione un período',
         consultantsLabel: 'Consultores',
@@ -192,10 +200,12 @@ const translationsData: { [key in Language]: Translations } = {
         loadingData: 'Cargando datos...',
         welcomeMessage: 'Por favor, seleccione consultores y/o clientes y un período, y luego haga clic en "Relatorio" para ver los resultados.',
         noDataMessage: 'No se encontraron datos para los filtros seleccionados.',
-        barChartTitle: 'Desempeño de los Consultores',
+        barChartTitleConsultant: 'Desempeño de los Consultores',
+        barChartTitleClient: 'Desempeño por Cliente',
         pieChartTitle: 'Participación en los Ingresos Netos',
         table: {
             consultant: 'Consultor',
+            client: 'Cliente',
             period: 'Período',
             netRevenue: 'Ingresos Netos',
             fixedCost: 'Costo Fijo',
@@ -285,6 +295,9 @@ const translationsData: { [key in Language]: Translations } = {
     },
     performancePage: {
         title: 'Commercial Performance',
+        reportTypeLabel: 'Report Type',
+        byConsultant: 'By Consultant',
+        byClient: 'By Client',
         periodLabel: 'Period',
         datePlaceholder: 'Select a period',
         consultantsLabel: 'Consultants',
@@ -296,10 +309,12 @@ const translationsData: { [key in Language]: Translations } = {
         loadingData: 'Loading data...',
         welcomeMessage: "Please select consultants and/or clients and a period, then click 'Report' to see the results.",
         noDataMessage: 'No data found for the selected filters.',
-        barChartTitle: 'Consultant Performance',
+        barChartTitleConsultant: 'Consultant Performance',
+        barChartTitleClient: 'Performance by Client',
         pieChartTitle: 'Net Revenue Share',
         table: {
             consultant: 'Consultant',
+            client: 'Client',
             period: 'Period',
             netRevenue: 'Net Revenue',
             fixedCost: 'Fixed Cost',
@@ -334,7 +349,6 @@ const LanguageContext = createContext<LanguageContextProps | undefined>(undefine
 export const LanguageProvider = ({ children }: { children: ReactNode }) => {
   const [language, setLanguage] = useState<Language>('pt');
 
-  // Efecto para leer el idioma del localStorage al cargar
   useEffect(() => {
     const storedLang = localStorage.getItem('language') as Language | null;
     if (storedLang && translationsData[storedLang]) {
@@ -342,7 +356,6 @@ export const LanguageProvider = ({ children }: { children: ReactNode }) => {
     }
   }, []);
   
-  // Efecto para actualizar el atributo lang de la etiqueta <html>
   useEffect(() => {
     document.documentElement.lang = language;
   }, [language]);

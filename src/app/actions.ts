@@ -63,6 +63,19 @@ const performanceData = [
         fixedCost: 1800,
         status: 'NF Paga',
     },
+    {
+        name: 'Braulio Hurtado',
+        client: 'Toyota do Brasil',
+        system: 'Fleet Control',
+        os: 'Manutenção',
+        nf: '373698',
+        emission: '2007-01-28',
+        total: 1200.00,
+        liquid: 1100.00,
+        commissionPercentage: 8,
+        fixedCost: 2000,
+        status: 'NF Paga',
+    }
 ];
 
 
@@ -83,6 +96,7 @@ const PerformanceRequestSchema = z.object({
   clients: z.array(z.string()),
   from: z.date(),
   to: z.date(),
+  reportType: z.enum(['consultant', 'client']),
 }).refine(data => data.consultants.length > 0 || data.clients.length > 0, {
     message: "Debe seleccionar al menos un consultor o un cliente.",
 });
@@ -91,12 +105,11 @@ const PerformanceRequestSchema = z.object({
 export async function getPerformanceData(request: z.infer<typeof PerformanceRequestSchema>) {
     const validation = PerformanceRequestSchema.safeParse(request);
     if (!validation.success) {
-        // En un caso real, loggearíamos validation.error para depuración
         console.error("Invalid request to getPerformanceData:", validation.error.flatten());
         throw new Error("Solicitud inválida. Faltan parámetros o son incorrectos.");
     }
 
-    const { consultants, clients, from, to } = validation.data;
+    const { consultants, clients, from, to, reportType } = validation.data;
     
     const filteredRawData = performanceData.filter(d => {
         const emissionDate = new Date(d.emission);
@@ -111,14 +124,15 @@ export async function getPerformanceData(request: z.infer<typeof PerformanceRequ
     const processedData = new Map<string, { netRevenue: number; fixedCost: number; commission: number; name: string }>();
 
     filteredRawData.forEach(item => {
-        const key = item.name; // Agrupar por consultor
+        const key = reportType === 'consultant' ? item.name : item.client;
         const commissionValue = item.liquid * (item.commissionPercentage / 100);
 
         if (!processedData.has(key)) {
             processedData.set(key, {
-                name: item.name,
+                name: key,
                 netRevenue: 0,
-                fixedCost: item.fixedCost, // Tomar el costo fijo del primer registro del consultor
+                // El costo fijo es por consultor, así que solo lo asignamos si el reporte es por consultor
+                fixedCost: reportType === 'consultant' ? item.fixedCost : 0, 
                 commission: 0,
             });
         }
@@ -126,26 +140,45 @@ export async function getPerformanceData(request: z.infer<typeof PerformanceRequ
         const entry = processedData.get(key)!;
         entry.netRevenue += item.liquid;
         entry.commission += commissionValue;
+        
+        // Si el reporte es por cliente, acumulamos los costos fijos de los consultores involucrados
+        if (reportType === 'client') {
+             // Esto es una simplificación. Si varios consultores trabajan para un cliente,
+             // podríamos querer sumar sus costos fijos. O no. Por ahora, lo dejamos en 0.
+             // Para un cálculo más preciso, la lógica de negocio debe ser definida.
+             // Por simplicidad, el costo fijo solo tiene sentido real en la vista por consultor.
+        }
     });
     
     const tableData = Array.from(processedData.values());
+    
+    let relevantNames: string[];
+    if (reportType === 'consultant') {
+        relevantNames = consultants.length > 0 ? consultants : tableData.map(d => d.name);
+    } else { // client
+        relevantNames = clients.length > 0 ? clients : tableData.map(d => d.name);
+    }
 
-    const selectedConsultantNames = consultants.length > 0 ? consultants : tableData.map(c => c.name);
 
-    const chartData = selectedConsultantNames.map(name => {
+    const chartData = relevantNames.map(name => {
         const data = processedData.get(name);
         if (data) {
             return data;
         }
-        // Si un consultor seleccionado no tiene datos en el período, devolver ceros
-        const consultantInfo = consultantsData.find(c => c.no_usuario === name);
-        const fixedCost = performanceData.find(p => p.name === name)?.fixedCost || 0; // Default a 0
-        return { name, netRevenue: 0, commission: 0, fixedCost: fixedCost };
-    }).filter(Boolean); // Filtrar nulos si un consultor no se encuentra
+        // Si una entidad seleccionada (consultor/cliente) no tiene datos, devolver ceros.
+        if (reportType === 'consultant') {
+            const fixedCost = performanceData.find(p => p.name === name)?.fixedCost || 0;
+            return { name, netRevenue: 0, commission: 0, fixedCost };
+        } else {
+            return { name, netRevenue: 0, commission: 0, fixedCost: 0 };
+        }
+    }).filter(Boolean) as { name: string; netRevenue: number; fixedCost: number; commission: number; }[];
 
 
     const totalFixedCost = chartData.reduce((sum, item) => sum + item.fixedCost, 0);
-    const averageFixedCost = chartData.length > 0 ? totalFixedCost / chartData.length : 0;
+    const averageFixedCost = reportType === 'consultant' && chartData.length > 0 
+        ? totalFixedCost / chartData.length 
+        : 0;
 
     return {
         tableData: tableData,

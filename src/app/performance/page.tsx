@@ -23,6 +23,8 @@ import { DateRange } from 'react-day-picker';
 import { MultiSelect, Option } from 'react-multi-select-component';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Calendar } from '@/components/ui/calendar';
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import { Label } from "@/components/ui/label"
 import { getConsultants, getClients, getPerformanceData } from '../actions';
 import MainHeader from '@/components/main-header';
 import { useToast } from '@/hooks/use-toast';
@@ -45,12 +47,15 @@ type ChartDataType = {
     fixedCost: number;
 }
 
+type ReportType = 'consultant' | 'client';
+
 export default function PerformancePage() {
   const { language, translations } = useLanguage();
   const [consultantOptions, setConsultantOptions] = useState<Option[]>([]);
   const [clientOptions, setClientOptions] = useState<Option[]>([]);
   const [selectedConsultants, setSelectedConsultants] = useState<Option[]>([]);
   const [selectedClients, setSelectedClients] = useState<Option[]>([]);
+  const [reportType, setReportType] = useState<ReportType>('consultant');
   const [date, setDate] = useState<DateRange | undefined>({
     from: new Date(2007, 0, 1),
     to: new Date(2007, 0, 31),
@@ -77,7 +82,7 @@ export default function PerformancePage() {
 
   const formatCurrency = (value: number) => {
     const localeMap = { pt: 'pt-BR', es: 'es-AR', en: 'en-US' };
-    const currencyMap = { pt: 'BRL', es: 'ARS', en: 'USD' }; // Note: ARS for R$ symbol hack
+    const currencyMap = { pt: 'BRL', es: 'ARS', en: 'USD' };
 
     const locale = localeMap[language];
     const currency = currencyMap[language];
@@ -87,12 +92,11 @@ export default function PerformancePage() {
       currency: currency,
     }).format(value);
 
-    if (language === 'es') {
-        return formatted.replace('$', 'R$');
-    }
-    if (language === 'en') {
-        // Even for english, we want to show BRL symbol
-        return formatted.replace('$', 'R$');
+    // BRL symbol override for es and en
+    if (language === 'es' || language === 'en') {
+        const symbol = language === 'es' ? 'R$' : 'R$';
+        const valuePart = formatted.replace(/[^\d,.-]/g, '');
+        return `${symbol} ${valuePart}`;
     }
     return formatted;
   };
@@ -117,6 +121,7 @@ export default function PerformancePage() {
         clients: selectedClients.map(c => c.label),
         from: date.from,
         to: date.to,
+        reportType: reportType,
       };
       const result = await getPerformanceData(request);
       setTableData(result.tableData);
@@ -179,7 +184,21 @@ export default function PerformancePage() {
       <main className="flex-1 container mx-auto p-4">
         <h2 className="text-lg font-semibold text-gray-800 mb-2">{translations.performancePage.title}</h2>
         <div className="bg-white p-4 rounded-t-lg border">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 items-end">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
+                <div>
+                  <label className="text-sm font-medium text-gray-700 block mb-1">{translations.performancePage.reportTypeLabel}</label>
+                  <RadioGroup defaultValue="consultant" onValueChange={(value: ReportType) => setReportType(value)} className="flex gap-4">
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="consultant" id="r-consultant" />
+                      <Label htmlFor="r-consultant">{translations.performancePage.byConsultant}</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="client" id="r-client" />
+                      <Label htmlFor="r-client">{translations.performancePage.byClient}</Label>
+                    </div>
+                  </RadioGroup>
+                </div>
+
                <div className="flex-1 min-w-[200px]">
                   <label className="text-sm font-medium text-gray-700 block mb-1">{translations.performancePage.periodLabel}</label>
                    <Popover>
@@ -242,7 +261,7 @@ export default function PerformancePage() {
                   />
                </div>
 
-               <div className="flex gap-2 flex-wrap justify-start">
+               <div className="flex gap-2 flex-wrap justify-start col-start-1 lg:col-start-auto">
                  <Button onClick={handleFetchData} disabled={isLoading}>
                     {isLoading ? translations.performancePage.loadingButton : translations.performancePage.reportButton}
                  </Button>
@@ -263,12 +282,12 @@ export default function PerformancePage() {
              <Table>
                 <TableHeader>
                   <TableRow className="bg-gray-200 hover:bg-gray-200">
-                    <TableHead className="font-bold text-gray-700">{translations.performancePage.table.consultant}</TableHead>
+                    <TableHead className="font-bold text-gray-700">{reportType === 'consultant' ? translations.performancePage.table.consultant : translations.performancePage.table.client}</TableHead>
                     <TableHead className="font-bold text-gray-700">{translations.performancePage.table.period}</TableHead>
                     <TableHead className="text-right font-bold text-gray-700">{translations.performancePage.table.netRevenue}</TableHead>
-                    <TableHead className="text-right font-bold text-gray-700">{translations.performancePage.table.fixedCost}</TableHead>
+                    {reportType === 'consultant' && <TableHead className="text-right font-bold text-gray-700">{translations.performancePage.table.fixedCost}</TableHead>}
                     <TableHead className="text-right font-bold text-gray-700">{translations.performancePage.table.commission}</TableHead>
-                    <TableHead className="text-right font-bold text-gray-700">{translations.performancePage.table.profit}</TableHead>
+                    {reportType === 'consultant' && <TableHead className="text-right font-bold text-gray-700">{translations.performancePage.table.profit}</TableHead>}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -281,18 +300,18 @@ export default function PerformancePage() {
                                 {date?.from && date?.to ? `${format(date.from, 'MMMM yyyy', { locale: dateLocale })} - ${format(date.to, 'MMMM yyyy', { locale: dateLocale })}` : ''}
                             </TableCell>
                             <TableCell className="text-right">{formatCurrency(item.netRevenue)}</TableCell>
-                            <TableCell className="text-right text-red-500">{formatCurrency(item.fixedCost)}</TableCell>
+                            {reportType === 'consultant' && <TableCell className="text-right text-red-500">{formatCurrency(item.fixedCost)}</TableCell>}
                             <TableCell className="text-right text-orange-500">{formatCurrency(item.commission)}</TableCell>
-                            <TableCell className={`text-right font-bold ${profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>{formatCurrency(profit)}</TableCell>
+                            {reportType === 'consultant' && <TableCell className={`text-right font-bold ${profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>{formatCurrency(profit)}</TableCell>}
                         </TableRow>
                     )
                   })}
                   <TableRow className="bg-gray-200 font-bold">
                     <TableCell colSpan={2}>SALDO</TableCell>
                     <TableCell className="text-right">{formatCurrency(totals.netRevenue)}</TableCell>
-                    <TableCell></TableCell>
+                    {reportType === 'consultant' && <TableCell></TableCell>}
                     <TableCell className="text-right">{formatCurrency(totals.commission)}</TableCell>
-                    <TableCell className={`text-right ${totals.profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>{formatCurrency(totals.profit)}</TableCell>
+                    {reportType === 'consultant' && <TableCell className={`text-right ${totals.profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>{formatCurrency(totals.profit)}</TableCell>}
                   </TableRow>
                 </TableBody>
               </Table>
@@ -311,7 +330,10 @@ export default function PerformancePage() {
             <Card>
               <CardHeader>
                 <CardTitle>
-                  {activeChart === 'bar' ? translations.performancePage.barChartTitle : translations.performancePage.pieChartTitle}
+                  {activeChart === 'bar' 
+                    ? (reportType === 'consultant' ? translations.performancePage.barChartTitleConsultant : translations.performancePage.barChartTitleClient)
+                    : translations.performancePage.pieChartTitle
+                  }
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -321,6 +343,7 @@ export default function PerformancePage() {
                     averageFixedCost={averageFixedCost}
                     formatCurrency={formatCurrency} 
                     translations={translations.performancePage.chartTranslations}
+                    showFixedCost={reportType === 'consultant'}
                   />
                 )}
                 {activeChart === 'pie' && <RevenuePieChart data={chartData} formatCurrency={formatCurrency} />}
