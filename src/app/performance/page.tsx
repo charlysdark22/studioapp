@@ -277,7 +277,9 @@ export default function PerformancePage() {
                     return (
                         <TableRow key={item.name}>
                             <TableCell className="font-medium text-blue-700">{item.name}</TableCell>
-                            <TableCell>{format(date!.from!, 'MMMM yyyy', { locale: dateLocale })} - {format(date!.to!, 'MMMM yyyy', { locale: dateLocale })}</TableCell>
+                            <TableCell>
+                                {date?.from && date?.to ? `${format(date.from, 'MMMM yyyy', { locale: dateLocale })} - ${format(date.to, 'MMMM yyyy', { locale: dateLocale })}` : ''}
+                            </TableCell>
                             <TableCell className="text-right">{formatCurrency(item.netRevenue)}</TableCell>
                             <TableCell className="text-right text-red-500">{formatCurrency(item.fixedCost)}</TableCell>
                             <TableCell className="text-right text-orange-500">{formatCurrency(item.commission)}</TableCell>
