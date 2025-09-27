@@ -1,9 +1,6 @@
 'use client';
 
 import React, { createContext, useState, useContext, ReactNode, useEffect } from 'react';
-import { Inter } from "next/font/google";
-
-const inter = Inter({ subsets: ["latin"] });
 
 type Language = 'pt' | 'es' | 'en';
 
@@ -337,6 +334,7 @@ const LanguageContext = createContext<LanguageContextProps | undefined>(undefine
 export const LanguageProvider = ({ children }: { children: ReactNode }) => {
   const [language, setLanguage] = useState<Language>('pt');
 
+  // Efecto para leer el idioma del localStorage al cargar
   useEffect(() => {
     const storedLang = localStorage.getItem('language') as Language | null;
     if (storedLang && translationsData[storedLang]) {
@@ -344,9 +342,11 @@ export const LanguageProvider = ({ children }: { children: ReactNode }) => {
     }
   }, []);
   
+  // Efecto para actualizar el atributo lang de la etiqueta <html>
   useEffect(() => {
-    document.body.className = `${inter.className} bg-gray-100`;
-  }, []);
+    document.documentElement.lang = language;
+  }, [language]);
+
 
   const setLanguageWrapper = (lang: Language) => {
     setLanguage(lang);
@@ -357,11 +357,7 @@ export const LanguageProvider = ({ children }: { children: ReactNode }) => {
 
   return (
     <LanguageContext.Provider value={{ language, setLanguage: setLanguageWrapper, translations }}>
-      <html lang={language}>
-        <body>
-          {children}
-        </body>
-      </html>
+      {children}
     </LanguageContext.Provider>
   );
 };

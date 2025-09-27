@@ -16,16 +16,16 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // El RootLayout renderiza la estructura principal. 
+  // LanguageProvider se encargará de modificar el 'lang' del document en el cliente.
   return (
-    // The <html> and <body> tags are managed by Next.js, but we can wrap the children
-    // with our client-side provider. The provider will then handle dynamic attributes on the body.
-    <LanguageProvider>
-        <html lang="en">
-            <body className={`${inter.className} bg-gray-100`}>
-                {children}
-                <Toaster />
-            </body>
-        </html>
-    </LanguageProvider>
+    <html lang="en"> 
+      <body className={`${inter.className} bg-gray-100`}>
+        <LanguageProvider>
+          {children}
+          <Toaster />
+        </LanguageProvider>
+      </body>
+    </html>
   );
 }
