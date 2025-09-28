@@ -42,7 +42,6 @@ const formSchemaEs = z.object({
     .max(6, { message: 'El código debe tener 6 dígitos.' }),
 });
 
-
 const SIMULATED_CORRECT_CODE = "123456";
 
 function VerifyPageContent() {
@@ -55,32 +54,32 @@ function VerifyPageContent() {
 
   const formSchema = language === 'pt' ? formSchemaPt : formSchemaEs;
 
-  if (!email) {
-    return (
-        <div className="flex items-center justify-center min-h-screen bg-gray-100">
-            <Card className="w-full max-w-sm text-center">
-                 <CardHeader>
-                    <CardTitle className="text-2xl">{translations.verifyPage.errorTitle}</CardTitle>
-                    <CardDescription>
-                        {translations.verifyPage.errorDescription}
-                    </CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <Link href="/register">
-                        <Button variant="outline">{translations.verifyPage.backToRegister}</Button>
-                    </Link>
-                </CardContent>
-            </Card>
-        </div>
-    );
-  }
-
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       code: '',
     },
   });
+
+  if (!email) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-100">
+        <Card className="w-full max-w-sm text-center">
+          <CardHeader>
+            <CardTitle className="text-2xl">{translations.verifyPage.errorTitle}</CardTitle>
+            <CardDescription>
+              {translations.verifyPage.errorDescription}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Link href="/register">
+              <Button variant="outline">{translations.verifyPage.backToRegister}</Button>
+            </Link>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
@@ -141,11 +140,22 @@ function VerifyPageContent() {
   );
 }
 
+function LoadingFallback() {
+  const { translations } = useLanguage();
+  return (
+    <div className="flex items-center justify-center min-h-screen bg-gray-100">
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto mb-4"></div>
+        <p>{translations.verifyPage.loadingFallback}</p>
+      </div>
+    </div>
+  );
+}
 
 export default function VerifyPage() {
-    return (
-        <Suspense fallback={<div>Carregando...</div>}>
-            <VerifyPageContent />
-        </Suspense>
-    )
+  return (
+    <Suspense fallback={<LoadingFallback />}>
+      <VerifyPageContent />
+    </Suspense>
+  );
 }
