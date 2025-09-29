@@ -77,9 +77,10 @@ const translationsData: { [key in Language]: Translations } = {
     },
     performancePage: {
         title: 'Performance Comercial',
+        filtersTitle: 'Filtros',
         reportTypeLabel: 'Tipo de Relatório',
-        byConsultant: 'Por Consultor',
-        byClient: 'Por Cliente',
+        byConsultant: 'Por Consultores',
+        byClient: 'Por Clientes',
         periodLabel: 'Período',
         datePlaceholder: 'Selecione um período',
         consultantsLabel: 'Consultores',
@@ -94,6 +95,8 @@ const translationsData: { [key in Language]: Translations } = {
         barChartTitleConsultant: 'Desempenho dos Consultores',
         barChartTitleClient: 'Desempenho por Cliente',
         pieChartTitle: 'Participação na Receita Líquida',
+        selectAll: 'Selecionar Todos',
+        clearSelection: 'Limpar Seleção',
         table: {
             consultant: 'Consultor',
             client: 'Cliente',
@@ -110,12 +113,6 @@ const translationsData: { [key in Language]: Translations } = {
         toastFetchError: 'Ocorreu um erro ao buscar os dados.',
         toastActionRequiredTitle: 'Ação requerida',
         toastActionRequiredDescription: 'Por favor, gere um relatório com dados antes de mostrar um gráfico.',
-        multiSelect: {
-            selectSomeItems: 'Selecione...',
-            allItemsAreSelected: 'Todos selecionados',
-            selectAll: 'Selecionar todos',
-            search: 'Buscar',
-        },
         chartTranslations: {
             netRevenue: 'Receita Líquida',
             fixedCost: 'Custo Fixo',
@@ -186,6 +183,7 @@ const translationsData: { [key in Language]: Translations } = {
     },
     performancePage: {
         title: 'Desempeño Comercial',
+        filtersTitle: 'Filtros',
         reportTypeLabel: 'Tipo de Reporte',
         byConsultant: 'Por Consultor',
         byClient: 'Por Cliente',
@@ -203,6 +201,8 @@ const translationsData: { [key in Language]: Translations } = {
         barChartTitleConsultant: 'Desempeño de los Consultores',
         barChartTitleClient: 'Desempeño por Cliente',
         pieChartTitle: 'Participación en los Ingresos Netos',
+        selectAll: 'Seleccionar Todos',
+        clearSelection: 'Limpiar Selección',
         table: {
             consultant: 'Consultor',
             client: 'Cliente',
@@ -219,12 +219,6 @@ const translationsData: { [key in Language]: Translations } = {
         toastFetchError: 'Ocurrió un error al buscar los datos.',
         toastActionRequiredTitle: 'Acción requerida',
         toastActionRequiredDescription: 'Por favor, genere un reporte con datos antes de mostrar un gráfico.',
-        multiSelect: {
-            selectSomeItems: 'Seleccione...',
-            allItemsAreSelected: 'Todos seleccionados',
-            selectAll: 'Seleccionar todos',
-            search: 'Buscar',
-        },
         chartTranslations: {
             netRevenue: 'Ingresos Netos',
             fixedCost: 'Costo Fijo',
@@ -295,6 +289,7 @@ const translationsData: { [key in Language]: Translations } = {
     },
     performancePage: {
         title: 'Commercial Performance',
+        filtersTitle: 'Filters',
         reportTypeLabel: 'Report Type',
         byConsultant: 'By Consultant',
         byClient: 'By Client',
@@ -312,6 +307,8 @@ const translationsData: { [key in Language]: Translations } = {
         barChartTitleConsultant: 'Consultant Performance',
         barChartTitleClient: 'Performance by Client',
         pieChartTitle: 'Net Revenue Share',
+        selectAll: 'Select All',
+        clearSelection: 'Clear Selection',
         table: {
             consultant: 'Consultant',
             client: 'Client',
@@ -328,12 +325,6 @@ const translationsData: { [key in Language]: Translations } = {
         toastFetchError: 'An error occurred while fetching the data.',
         toastActionRequiredTitle: 'Action Required',
         toastActionRequiredDescription: 'Please generate a report with data before showing a chart.',
-        multiSelect: {
-            selectSomeItems: 'Select...',
-            allItemsAreSelected: 'All items are selected',
-            selectAll: 'Select All',
-            search: 'Search',
-        },
         chartTranslations: {
             netRevenue: 'Net Revenue',
             fixedCost: 'Fixed Cost',
