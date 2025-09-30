@@ -1,67 +1,78 @@
 'use server';
-import { Pool } from 'pg';
 import { z } from 'zod';
 
-const connectionString = process.env.DATABASE_URL;
+/**
+ * NOTA PARA EL DESARROLLADOR:
+ * Este archivo ha sido modificado para obtener datos desde una API externa
+ * en lugar de conectarse directamente a una base de datos.
+ *
+ * Debes reemplazar las URLs de ejemplo ('https://tu-api.com/...') con los
+ * endpoints reales de tu backend en Laravel cuando estén listos.
+ *
+ * La lógica actual está simulada y devuelve datos vacíos.
+ */
 
-let pool: Pool | null = null;
+// URL base de tu API. Deberías ponerla en una variable de entorno.
+const API_BASE_URL = process.env.API_URL || 'https://lukn95yiioc6p6bmxebn4lf9-production--apps.builduo.com';
 
-if (connectionString) {
-  pool = new Pool({
-    connectionString,
-  });
-} else {
-  console.error(
-    'DATABASE_URL environment variable is not set. Please create a .env file with your PostgreSQL connection string.'
-  );
-}
+// Función auxiliar para manejar las llamadas a la API
+async function fetchFromApi(endpoint: string, options: RequestInit = {}) {
+  try {
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+      ...options,
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        ...options.headers,
+      },
+    });
 
-async function getClient() {
-  if (!pool) {
-    throw new Error('Database connection pool is not available. Please check your DATABASE_URL environment variable.');
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`Error en la API [${response.status}] en ${endpoint}: ${errorText}`);
+      throw new Error(`Error al contactar la API: ${response.statusText}`);
+    }
+    return response.json();
+  } catch (error) {
+    console.error(`Error de red o de fetch para el endpoint ${endpoint}:`, error);
+    // Devuelve un array vacío o un objeto por defecto para que la UI no se rompa.
+    return []; 
   }
-  const client = await pool.connect();
-  return client;
 }
+
 
 export async function getConsultants() {
-  if (!pool) return [];
-  try {
-    const client = await getClient();
-    try {
-      const res = await client.query(
-        "SELECT co_usuario, no_usuario FROM cao_usuario WHERE co_tipo_usuario IN (0, 1, 2) ORDER BY no_usuario"
-      );
-      return res.rows as { co_usuario: string; no_usuario: string }[];
-    } finally {
-      client.release();
-    }
-  } catch (error) {
-    console.error('Error fetching consultants:', error);
-    return [];
-  }
+  /**
+   * TODO: Reemplaza este endpoint con el real de tu API para obtener consultores.
+   * La API debería devolver un array de objetos como:
+   * [{ co_usuario: 'user1', no_usuario: 'Nombre Usuario 1' }, ...]
+   */
+  // const data = await fetchFromApi('/api/consultants');
+  // return data as { co_usuario: string; no_usuario: string }[];
+  
+  // Datos de ejemplo mientras no hay API
+  return [
+      { co_usuario: 'agonzalez', no_usuario: 'Anabela Gonzalez' },
+      { co_usuario: 'b.araujo', no_usuario: 'Benito Araujo' },
+      { co_usuario: 'c.arruda', no_usuario: 'Carlos Arruda' },
+    ];
 }
 
 export async function getClients() {
-  if (!pool) return [];
-  try {
-    const client = await getClient();
-    try {
-      const res = await client.query(
-        "SELECT no_fantasia, co_cliente FROM cao_cliente ORDER BY no_fantasia"
-      );
-      const clients = res.rows.map(row => ({
-        label: row.no_fantasia,
-        value: row.co_cliente,
-      }));
-      return clients;
-    } finally {
-      client.release();
-    }
-  } catch (error) {
-    console.error('Error fetching clients:', error);
-    return [];
-  }
+  /**
+   * TODO: Reemplaza este endpoint con el real de tu API para obtener clientes.
+   * La API debería devolver un array de objetos como:
+   * [{ value: 'cliente1', label: 'Nombre Cliente 1' }, ...]
+   */
+  // const data = await fetchFromApi('/api/clients');
+  // return data as { label: string; value: string }[];
+  
+   // Datos de ejemplo mientras no hay API
+  return [
+    { value: 'cliente_a', label: 'Cliente A' },
+    { value: 'cliente_b', label: 'Cliente B' },
+    { value: 'cliente_c', label: 'Cliente C' },
+  ];
 }
 
 const PerformanceRequestSchema = z.object({
@@ -72,79 +83,38 @@ const PerformanceRequestSchema = z.object({
 });
 
 export async function getPerformanceData(request: z.infer<typeof PerformanceRequestSchema>) {
-  if (!pool) {
-    return {
-      tableData: [],
-      chartData: [],
-      averageFixedCost: 0,
-    };
-  }
-
   const validation = PerformanceRequestSchema.safeParse(request);
   if (!validation.success) {
     console.error('Invalid performance data request:', validation.error);
     throw new Error("Invalid request parameters.");
   }
-
+  
   const { consultants, clients, from, to } = validation.data;
-
   const fromDate = from.toISOString().split('T')[0];
   const toDate = to.toISOString().split('T')[0];
 
-  try {
-    const dbClient = await getClient();
-    try {
-      const query = `
-        SELECT
-          u.no_usuario as name,
-          SUM(f.valor - (f.valor * f.total_imp_inc / 100)) as "netRevenue",
-          s.brut_salario as "fixedCost",
-          SUM((f.valor - (f.valor * f.total_imp_inc / 100)) * f.comissao_cn / 100) as commission
-        FROM cao_fatura f
-        JOIN cao_os os ON f.co_os = os.co_os
-        JOIN cao_usuario u ON os.co_usuario = u.co_usuario
-        LEFT JOIN cao_salario s ON u.co_usuario = s.co_usuario
-        WHERE f.data_emissao BETWEEN $1 AND $2
-          AND u.co_usuario = ANY($3::text[])
-          AND f.co_cliente = ANY($4::text[])
-        GROUP BY u.no_usuario, s.brut_salario
-        ORDER BY u.no_usuario;
-      `;
+  /**
+   * TODO: Reemplaza este endpoint con el real de tu API para obtener los datos de rendimiento.
+   * Deberías enviar los filtros en el cuerpo de la petición o como query params.
+   * Ejemplo con query params:
+   * const endpoint = `/api/performance?from=${fromDate}&to=${toDate}&consultants=${consultants.join(',')}&clients=${clients.join(',')}`;
+   * const result = await fetchFromApi(endpoint);
+   *
+   * La API debería devolver un objeto como:
+   * {
+   *   tableData: [{ name: 'Consultor', netRevenue: 1000, ... }],
+   *   chartData: [{ name: 'Consultor', netRevenue: 1000, ... }],
+   *   averageFixedCost: 500
+   * }
+   */
+   
+  console.log("Obteniendo datos de rendimiento (simulado) para:", { consultants, clients, fromDate, toDate });
 
-      const params = [fromDate, toDate, consultants, clients];
-      const res = await dbClient.query(query, params);
-
-      const tableData = res.rows.map(row => ({
-        name: row.name,
-        netRevenue: parseFloat(row.netRevenue) || 0,
-        fixedCost: parseFloat(row.fixedCost) || 0,
-        commission: parseFloat(row.commission) || 0,
-      }));
-
-      const chartData = tableData.map(item => ({
-        name: item.name,
-        netRevenue: item.netRevenue,
-        commission: item.commission,
-        fixedCost: item.fixedCost,
-      }));
-
-      const totalFixedCost = tableData.reduce((acc, curr) => acc + (curr.fixedCost || 0), 0);
-      const averageFixedCost = tableData.length > 0 ? totalFixedCost / tableData.length : 0;
-      
-      return {
-        tableData,
-        chartData,
-        averageFixedCost,
-      };
-    } finally {
-      dbClient.release();
-    }
-  } catch (error) {
-    console.error("Error fetching performance data:", error);
-    return {
-      tableData: [],
-      chartData: [],
-      averageFixedCost: 0,
-    };
-  }
+  // Devolvemos datos vacíos para que la aplicación no se rompa.
+  // Aquí es donde procesarías la respuesta de tu API.
+  return {
+    tableData: [],
+    chartData: [],
+    averageFixedCost: 0,
+  };
 }
