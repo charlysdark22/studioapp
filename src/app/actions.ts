@@ -90,6 +90,9 @@ const PerformanceRequestSchema = z.object({
   reportType: z.enum(['consultant', 'client']),
 });
 
+// Función para generar un número aleatorio en un rango
+const getRandomNumber = (min: number, max: number) => Math.random() * (max - min) + min;
+
 export async function getPerformanceData(request: z.infer<typeof PerformanceRequestSchema>) {
   const validation = PerformanceRequestSchema.safeParse(request);
   if (!validation.success) {
@@ -105,21 +108,49 @@ export async function getPerformanceData(request: z.infer<typeof PerformanceRequ
    *
    * const body = JSON.stringify({ consultants, clients, from, to, reportType });
    * const result = await fetchFromApi('/api/performance', { method: 'POST', body });
-   *
-   * La API debería devolver un objeto como:
-   * {
-   *   tableData: [{ name: 'Consultor', netRevenue: 1000, ... }],
-   *   chartData: [{ name: 'Consultor', netRevenue: 1000, ... }],
-   *   averageFixedCost: 500
-   * }
+   * return result;
    */
    
   console.log("Simulando obtención de datos de rendimiento para:", { consultants, clients, from, to, reportType });
 
-  // Devolvemos datos vacíos para que la aplicación no se rompa mientras no hay API.
+  // === INICIO DE LA SIMULACIÓN DE DATOS ===
+  // Generamos datos ficticios basados en la selección para que la UI funcione.
+  
+  const allConsultants = await getConsultants();
+  const allClients = await getClients();
+
+  const data = (reportType === 'consultant' ? consultants : clients).map(name => {
+    const netRevenue = getRandomNumber(10000, 50000);
+    const fixedCost = netRevenue * getRandomNumber(0.15, 0.30); // 15% a 30% de la receita
+    const commission = netRevenue * getRandomNumber(0.05, 0.12); // 5% a 12% de la receita
+
+    let displayName = name;
+    if (reportType === 'consultant') {
+        const consultant = allConsultants.find(c => c.co_usuario === name);
+        displayName = consultant ? consultant.no_usuario : name;
+    } else {
+        const client = allClients.find(c => c.value === name);
+        displayName = client ? client.label : name;
+    }
+
+    return {
+      name: displayName,
+      netRevenue: parseFloat(netRevenue.toFixed(2)),
+      fixedCost: reportType === 'consultant' ? parseFloat(fixedCost.toFixed(2)) : 0,
+      commission: parseFloat(commission.toFixed(2)),
+    };
+  });
+  
+  const totalFixedCost = data.reduce((sum, item) => sum + item.fixedCost, 0);
+  const averageFixedCost = data.length > 0 ? totalFixedCost / data.length : 0;
+
+  // Espera simulada para imitar una llamada de red
+  await new Promise(resolve => setTimeout(resolve, 800));
+
   return {
-    tableData: [],
-    chartData: [],
-    averageFixedCost: 0,
+    tableData: data,
+    chartData: data,
+    averageFixedCost: parseFloat(averageFixedCost.toFixed(2)),
   };
+  // === FIN DE LA SIMULACIÓN DE DATOS ===
 }
