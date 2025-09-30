@@ -11,7 +11,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { PieChart, BarChart } from 'lucide-react';
+import { PieChart, BarChart, RefreshCw } from 'lucide-react';
 import {
   Select,
   SelectContent,
@@ -19,7 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -189,165 +189,190 @@ export default function PerformancePage() {
     setActiveChart(prev => prev === type ? null : type);
   };
   
-  return (
-    <div className="flex flex-col min-h-screen bg-gray-100">
-      <MainHeader />
-      <main className="flex-1 container mx-auto p-4">
-        <div className="bg-white p-6 rounded-lg border shadow-sm">
-            <h2 className="text-xl font-bold text-gray-800 mb-4">{translations.performancePage.filtersTitle || 'Filtros'}</h2>
-            <div className="grid grid-cols-1 md:grid-cols-5 gap-4 items-end mb-6">
-                <div className="col-span-1 md:col-span-4">
-                    <label className="text-sm font-medium text-gray-700 block mb-1">{translations.performancePage.periodLabel}</label>
-                    <div className="flex items-center gap-2">
-                        <Select value={startMonth} onValueChange={setStartMonth}>
-                            <SelectTrigger><SelectValue /></SelectTrigger>
-                            <SelectContent>
-                                {months.map(m => <SelectItem key={m.value} value={String(m.value)}>{m.label}</SelectItem>)}
-                            </SelectContent>
-                        </Select>
-                        <Select value={startYear} onValueChange={setStartYear}>
-                            <SelectTrigger><SelectValue /></SelectTrigger>
-                            <SelectContent>
-                                {years.map(y => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}
-                            </SelectContent>
-                        </Select>
-                        <span className="text-gray-500">a</span>
-                        <Select value={endMonth} onValueChange={setEndMonth}>
-                            <SelectTrigger><SelectValue /></SelectTrigger>
-                            <SelectContent>
-                                {months.map(m => <SelectItem key={m.value} value={String(m.value)}>{m.label}</SelectItem>)}
-                            </SelectContent>
-                        </Select>
-                        <Select value={endYear} onValueChange={setEndYear}>
-                            <SelectTrigger><SelectValue /></SelectTrigger>
-                            <SelectContent>
-                                {years.map(y => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}
-                            </SelectContent>
-                        </Select>
-                    </div>
-                </div>
-                 <div className="flex gap-2 justify-self-end">
-                     <Button onClick={() => handleShowChart('bar')} variant="outline" size="icon" disabled={!hasFetchedData || isLoading || tableData.length === 0}>
-                        <BarChart className="h-5 w-5" />
-                     </Button>
-                      <Button onClick={() => handleShowChart('pie')} variant="outline" size="icon" disabled={!hasFetchedData || isLoading || tableData.length === 0}>
-                        <PieChart className="h-5 w-5" />
-                      </Button>
-                      <Button onClick={handleFetchData} disabled={isLoading}>
-                        <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 8l4 4m0 0l-4 4m4-4H3"></path></svg>
-                      </Button>
-                 </div>
-            </div>
+  const handleRefresh = () => {
+    window.location.reload();
+  }
 
-            <Tabs value={reportType} onValueChange={(value) => setReportType(value as ReportType)}>
-                <TabsList className="grid w-full grid-cols-2">
-                    <TabsTrigger value="consultant">{translations.performancePage.byConsultant}</TabsTrigger>
-                    <TabsTrigger value="client">{translations.performancePage.byClient}</TabsTrigger>
-                </TabsList>
-                <TabsContent value="consultant">
-                    <div className="flex justify-between items-center mb-2 mt-4">
-                        <h3 className="font-semibold">{translations.performancePage.consultantsLabel}</h3>
-                        <div>
-                            <Button variant="link" onClick={() => setSelectedConsultants(consultantOptions.map(c => c.co_usuario))}>{translations.performancePage.selectAll}</Button>
-                            <Button variant="link" onClick={() => setSelectedConsultants([])}>{translations.performancePage.clearSelection}</Button>
-                        </div>
-                    </div>
-                    <ScrollArea className="h-64 w-full rounded-md border p-4">
-                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                            {consultantOptions.map(consultant => (
-                                <div key={consultant.co_usuario} className="flex items-center space-x-2">
-                                    <Checkbox 
-                                        id={consultant.co_usuario} 
-                                        checked={selectedConsultants.includes(consultant.co_usuario)}
-                                        onCheckedChange={() => handleConsultantSelection(consultant.co_usuario)}
-                                    />
-                                    <label htmlFor={consultant.co_usuario} className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                                        {consultant.no_usuario}
-                                    </label>
-                                </div>
-                            ))}
-                        </div>
-                    </ScrollArea>
-                </TabsContent>
-                <TabsContent value="client">
-                    <div className="flex justify-between items-center mb-2 mt-4">
-                        <h3 className="font-semibold">{translations.performancePage.clientsLabel}</h3>
-                        <div>
-                            <Button variant="link" onClick={() => setSelectedClients(clientOptions.map(c => c.value))}>{translations.performancePage.selectAll}</Button>
-                            <Button variant="link" onClick={() => setSelectedClients([])}>{translations.performancePage.clearSelection}</Button>
-                        </div>
-                    </div>
-                    <ScrollArea className="h-64 w-full rounded-md border p-4">
-                         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                            {clientOptions.map(client => (
-                                <div key={client.value} className="flex items-center space-x-2">
-                                    <Checkbox 
-                                        id={client.value}
-                                        checked={selectedClients.includes(client.value)}
-                                        onCheckedChange={() => handleClientSelection(client.value)}
-                                    />
-                                    <label htmlFor={client.value} className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                                        {client.label}
-                                    </label>
-                                </div>
-                            ))}
-                        </div>
-                    </ScrollArea>
-                </TabsContent>
-            </Tabs>
-        </div>
-        
-        <div className="bg-white p-4 rounded-b-lg border-l border-r border-b mt-4">
-           {isLoading ? (
-             <div className="text-center py-10 text-gray-500">{translations.performancePage.loadingData}</div>
-           ) : hasFetchedData && tableData.length > 0 ? (
-             <Table>
-                <TableHeader>
-                  <TableRow className="bg-gray-200 hover:bg-gray-200">
-                    <TableHead className="font-bold text-gray-700">{reportType === 'consultant' ? translations.performancePage.table.consultant : translations.performancePage.table.client}</TableHead>
-                    <TableHead className="font-bold text-gray-700">{translations.performancePage.table.period}</TableHead>
-                    <TableHead className="text-right font-bold text-gray-700">{translations.performancePage.table.netRevenue}</TableHead>
-                    {reportType === 'consultant' && <TableHead className="text-right font-bold text-gray-700">{translations.performancePage.table.fixedCost}</TableHead>}
-                    <TableHead className="text-right font-bold text-gray-700">{translations.performancePage.table.commission}</TableHead>
-                    {reportType === 'consultant' && <TableHead className="text-right font-bold text-gray-700">{translations.performancePage.table.profit}</TableHead>}
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {tableData.map((item) => {
-                    const profit = item.netRevenue - (item.fixedCost + item.commission);
-                    const period = `${months[parseInt(startMonth)-1].label.substring(0,3)}/${startYear} a ${months[parseInt(endMonth)-1].label.substring(0,3)}/${endYear}`;
-                    return (
-                        <TableRow key={item.name}>
-                            <TableCell className="font-medium text-blue-700">{item.name}</TableCell>
-                            <TableCell>{period}</TableCell>
-                            <TableCell className="text-right">{formatCurrency(item.netRevenue)}</TableCell>
-                            {reportType === 'consultant' && <TableCell className="text-right text-red-500">{formatCurrency(item.fixedCost)}</TableCell>}
-                            <TableCell className="text-right text-orange-500">{formatCurrency(item.commission)}</TableCell>
-                            {reportType === 'consultant' && <TableCell className={`text-right font-bold ${profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>{formatCurrency(profit)}</TableCell>}
-                        </TableRow>
-                    )
-                  })}
-                  <TableRow className="bg-gray-200 font-bold">
-                    <TableCell colSpan={2}>SALDO</TableCell>
-                    <TableCell className="text-right">{formatCurrency(totals.netRevenue)}</TableCell>
-                    {reportType === 'consultant' && <TableCell></TableCell>}
-                    <TableCell className="text-right">{formatCurrency(totals.commission)}</TableCell>
-                    {reportType === 'consultant' && <TableCell className={`text-right ${totals.profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>{formatCurrency(totals.profit)}</TableCell>}
-                  </TableRow>
-                </TableBody>
-              </Table>
-           ) : (
-             <div className="text-center py-10 text-gray-500">
-               {!hasFetchedData && !isLoading 
-                ? translations.performancePage.welcomeMessage
-                : translations.performancePage.noDataMessage
-               }
-             </div>
-           )}
-        </div>
-        
-        {activeChart && hasFetchedData && chartData.length > 0 && (
-          <div className="mt-8">
+  return (
+    <div className="flex flex-col min-h-screen bg-gray-50">
+      <MainHeader />
+      <main className="flex-1 container mx-auto p-4 md:p-6">
+        <div className="grid gap-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>{translations.performancePage.filtersTitle || 'Filtros'}</CardTitle>
+              <CardDescription>Selecione os critérios para gerar o relatório de desempenho.</CardDescription>
+            </CardHeader>
+            <CardContent className="grid gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                      <label className="text-sm font-medium text-gray-700 block mb-2">{translations.performancePage.periodLabel}</label>
+                      <div className="grid grid-cols-2 md:grid-cols-5 gap-2 items-center">
+                          <Select value={startMonth} onValueChange={setStartMonth}>
+                              <SelectTrigger><SelectValue /></SelectTrigger>
+                              <SelectContent>
+                                  {months.map(m => <SelectItem key={m.value} value={String(m.value)}>{m.label}</SelectItem>)}
+                              </SelectContent>
+                          </Select>
+                          <Select value={startYear} onValueChange={setStartYear}>
+                              <SelectTrigger><SelectValue /></SelectTrigger>
+                              <SelectContent>
+                                  {years.map(y => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}
+                              </SelectContent>
+                          </Select>
+                          <span className="text-gray-500 text-center hidden md:block">a</span>
+                          <Select value={endMonth} onValueChange={setEndMonth}>
+                              <SelectTrigger><SelectValue /></SelectTrigger>
+                              <SelectContent>
+                                  {months.map(m => <SelectItem key={m.value} value={String(m.value)}>{m.label}</SelectItem>)}
+                              </SelectContent>
+                          </Select>
+                          <Select value={endYear} onValueChange={setEndYear}>
+                              <SelectTrigger><SelectValue /></SelectTrigger>
+                              <SelectContent>
+                                  {years.map(y => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}
+                              </SelectContent>
+                          </Select>
+                      </div>
+                  </div>
+                   <div className="self-end">
+                      <label className="text-sm font-medium text-gray-700 block mb-2 opacity-0 hidden md:block">Ações</label>
+                      <div className="flex gap-2">
+                        <Button onClick={handleFetchData} disabled={isLoading} className="flex-1 md:flex-none">
+                          {translations.performancePage.reportButton || 'Gerar Relatório'}
+                        </Button>
+                        <Button onClick={() => handleShowChart('bar')} variant="outline" size="icon" disabled={!hasFetchedData || isLoading || tableData.length === 0}>
+                           <BarChart className="h-5 w-5" />
+                        </Button>
+                         <Button onClick={() => handleShowChart('pie')} variant="outline" size="icon" disabled={!hasFetchedData || isLoading || tableData.length === 0}>
+                           <PieChart className="h-5 w-5" />
+                         </Button>
+                         <Button onClick={handleRefresh} variant="outline" size="icon">
+                            <RefreshCw className="h-5 w-5" />
+                         </Button>
+                      </div>
+                   </div>
+              </div>
+
+              <Tabs value={reportType} onValueChange={(value) => setReportType(value as ReportType)}>
+                  <TabsList className="grid w-full grid-cols-2">
+                      <TabsTrigger value="consultant">{translations.performancePage.byConsultant}</TabsTrigger>
+                      <TabsTrigger value="client">{translations.performancePage.byClient}</TabsTrigger>
+                  </TabsList>
+                  <TabsContent value="consultant">
+                      <div className="flex justify-between items-center mb-2 mt-4">
+                          <h3 className="font-semibold">{translations.performancePage.consultantsLabel}</h3>
+                          <div>
+                              <Button variant="link" onClick={() => setSelectedConsultants(consultantOptions.map(c => c.co_usuario))}>{translations.performancePage.selectAll}</Button>
+                              <Button variant="link" onClick={() => setSelectedConsultants([])}>{translations.performancePage.clearSelection}</Button>
+                          </div>
+                      </div>
+                      <ScrollArea className="h-64 w-full rounded-md border p-4">
+                          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                              {consultantOptions.map(consultant => (
+                                  <div key={consultant.co_usuario} className="flex items-center space-x-2">
+                                      <Checkbox 
+                                          id={consultant.co_usuario} 
+                                          checked={selectedConsultants.includes(consultant.co_usuario)}
+                                          onCheckedChange={() => handleConsultantSelection(consultant.co_usuario)}
+                                      />
+                                      <label htmlFor={consultant.co_usuario} className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                                          {consultant.no_usuario}
+                                      </label>
+                                  </div>
+                              ))}
+                          </div>
+                      </ScrollArea>
+                  </TabsContent>
+                  <TabsContent value="client">
+                      <div className="flex justify-between items-center mb-2 mt-4">
+                          <h3 className="font-semibold">{translations.performancePage.clientsLabel}</h3>
+                          <div>
+                              <Button variant="link" onClick={() => setSelectedClients(clientOptions.map(c => c.value))}>{translations.performancePage.selectAll}</Button>
+                              <Button variant="link" onClick={() => setSelectedClients([])}>{translations.performancePage.clearSelection}</Button>
+                          </div>
+                      </div>
+                      <ScrollArea className="h-64 w-full rounded-md border p-4">
+                           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                              {clientOptions.map(client => (
+                                  <div key={client.value} className="flex items-center space-x-2">
+                                      <Checkbox 
+                                          id={client.value}
+                                          checked={selectedClients.includes(client.value)}
+                                          onCheckedChange={() => handleClientSelection(client.value)}
+                                      />
+                                      <label htmlFor={client.value} className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                                          {client.label}
+                                      </label>
+                                  </div>
+                              ))}
+                          </div>
+                      </ScrollArea>
+                  </TabsContent>
+              </Tabs>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardHeader>
+              <CardTitle>Resultados</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {isLoading ? (
+                <div className="text-center py-10 text-gray-500 flex items-center justify-center">
+                  <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                  {translations.performancePage.loadingData}
+                </div>
+              ) : hasFetchedData && tableData.length > 0 ? (
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="bg-gray-100 hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-800">
+                        <TableHead className="font-bold text-gray-700 dark:text-gray-300">{reportType === 'consultant' ? translations.performancePage.table.consultant : translations.performancePage.table.client}</TableHead>
+                        <TableHead className="font-bold text-gray-700 dark:text-gray-300">{translations.performancePage.table.period}</TableHead>
+                        <TableHead className="text-right font-bold text-gray-700 dark:text-gray-300">{translations.performancePage.table.netRevenue}</TableHead>
+                        {reportType === 'consultant' && <TableHead className="text-right font-bold text-gray-700 dark:text-gray-300">{translations.performancePage.table.fixedCost}</TableHead>}
+                        <TableHead className="text-right font-bold text-gray-700 dark:text-gray-300">{translations.performancePage.table.commission}</TableHead>
+                        {reportType === 'consultant' && <TableHead className="text-right font-bold text-gray-700 dark:text-gray-300">{translations.performancePage.table.profit}</TableHead>}
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {tableData.map((item) => {
+                        const profit = item.netRevenue - (item.fixedCost + item.commission);
+                        const period = `${months[parseInt(startMonth)-1].label.substring(0,3)}/${startYear} a ${months[parseInt(endMonth)-1].label.substring(0,3)}/${endYear}`;
+                        return (
+                            <TableRow key={item.name}>
+                                <TableCell className="font-medium text-blue-600 dark:text-blue-400">{item.name}</TableCell>
+                                <TableCell>{period}</TableCell>
+                                <TableCell className="text-right">{formatCurrency(item.netRevenue)}</TableCell>
+                                {reportType === 'consultant' && <TableCell className="text-right text-red-500">{formatCurrency(item.fixedCost)}</TableCell>}
+                                <TableCell className="text-right text-orange-500">{formatCurrency(item.commission)}</TableCell>
+                                {reportType === 'consultant' && <TableCell className={`text-right font-bold ${profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>{formatCurrency(profit)}</TableCell>}
+                            </TableRow>
+                        )
+                      })}
+                      <TableRow className="bg-gray-100 font-bold hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-800">
+                        <TableCell colSpan={2}>SALDO</TableCell>
+                        <TableCell className="text-right">{formatCurrency(totals.netRevenue)}</TableCell>
+                        {reportType === 'consultant' && <TableCell></TableCell>}
+                        <TableCell className="text-right">{formatCurrency(totals.commission)}</TableCell>
+                        {reportType === 'consultant' && <TableCell className={`text-right ${totals.profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>{formatCurrency(totals.profit)}</TableCell>}
+                      </TableRow>
+                    </TableBody>
+                  </Table>
+                </div>
+              ) : (
+                <div className="text-center py-10 text-gray-500">
+                  {!hasFetchedData && !isLoading 
+                    ? translations.performancePage.welcomeMessage
+                    : translations.performancePage.noDataMessage
+                  }
+                </div>
+              )}
+            </CardContent>
+          </Card>
+          
+          {activeChart && hasFetchedData && chartData.length > 0 && (
             <Card>
               <CardHeader>
                 <CardTitle>
@@ -370,9 +395,11 @@ export default function PerformancePage() {
                 {activeChart === 'pie' && <RevenuePieChart data={chartData} formatCurrency={formatCurrency} />}
               </CardContent>
             </Card>
-          </div>
-        )}
+          )}
+        </div>
       </main>
     </div>
   );
 }
+
+    
