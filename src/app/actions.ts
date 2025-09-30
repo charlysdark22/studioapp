@@ -6,13 +6,13 @@ import { z } from 'zod';
  * Este archivo ha sido modificado para obtener datos desde una API externa
  * en lugar de conectarse directamente a una base de datos.
  *
- * Debes reemplazar las URLs de ejemplo ('https://tu-api.com/...') con los
+ * Debes reemplazar las URLs de ejemplo ('/api/...') con los
  * endpoints reales de tu backend en Laravel cuando estén listos.
  *
- * La lógica actual está simulada y devuelve datos vacíos.
+ * La lógica actual está simulada para devolver datos de ejemplo y que la UI no se rompa.
  */
 
-// URL base de tu API. Deberías ponerla en una variable de entorno.
+// URL base de tu API de Laravel.
 const API_BASE_URL = process.env.API_URL || 'https://lukn95yiioc6p6bmxebn4lf9-production--apps.builduo.com';
 
 // Función auxiliar para manejar las llamadas a la API
@@ -32,7 +32,10 @@ async function fetchFromApi(endpoint: string, options: RequestInit = {}) {
       console.error(`Error en la API [${response.status}] en ${endpoint}: ${errorText}`);
       throw new Error(`Error al contactar la API: ${response.statusText}`);
     }
-    return response.json();
+    // Si la respuesta no tiene cuerpo (ej. en un 204 No Content), devolvemos un objeto vacío.
+    const text = await response.text();
+    return text ? JSON.parse(text) : {};
+
   } catch (error) {
     console.error(`Error de red o de fetch para el endpoint ${endpoint}:`, error);
     // Devuelve un array vacío o un objeto por defecto para que la UI no se rompa.
@@ -55,6 +58,8 @@ export async function getConsultants() {
       { co_usuario: 'agonzalez', no_usuario: 'Anabela Gonzalez' },
       { co_usuario: 'b.araujo', no_usuario: 'Benito Araujo' },
       { co_usuario: 'c.arruda', no_usuario: 'Carlos Arruda' },
+      { co_usuario: 'c.viana', no_usuario: 'Carlos Viana' },
+      { co_usuario: 'a.Azevedo', no_usuario: 'Aline de Azevedo' },
     ];
 }
 
@@ -72,6 +77,8 @@ export async function getClients() {
     { value: 'cliente_a', label: 'Cliente A' },
     { value: 'cliente_b', label: 'Cliente B' },
     { value: 'cliente_c', label: 'Cliente C' },
+    { value: 'cliente_d', label: 'Cliente D' },
+    { value: 'cliente_e', label: 'Cliente E' },
   ];
 }
 
@@ -80,6 +87,7 @@ const PerformanceRequestSchema = z.object({
   clients: z.array(z.string()),
   from: z.date(),
   to: z.date(),
+  reportType: z.enum(['consultant', 'client']),
 });
 
 export async function getPerformanceData(request: z.infer<typeof PerformanceRequestSchema>) {
@@ -89,16 +97,14 @@ export async function getPerformanceData(request: z.infer<typeof PerformanceRequ
     throw new Error("Invalid request parameters.");
   }
   
-  const { consultants, clients, from, to } = validation.data;
-  const fromDate = from.toISOString().split('T')[0];
-  const toDate = to.toISOString().split('T')[0];
-
+  const { consultants, clients, from, to, reportType } = validation.data;
+  
   /**
    * TODO: Reemplaza este endpoint con el real de tu API para obtener los datos de rendimiento.
-   * Deberías enviar los filtros en el cuerpo de la petición o como query params.
-   * Ejemplo con query params:
-   * const endpoint = `/api/performance?from=${fromDate}&to=${toDate}&consultants=${consultants.join(',')}&clients=${clients.join(',')}`;
-   * const result = await fetchFromApi(endpoint);
+   * Deberías enviar los filtros en el cuerpo de la petición (POST).
+   *
+   * const body = JSON.stringify({ consultants, clients, from, to, reportType });
+   * const result = await fetchFromApi('/api/performance', { method: 'POST', body });
    *
    * La API debería devolver un objeto como:
    * {
@@ -108,10 +114,9 @@ export async function getPerformanceData(request: z.infer<typeof PerformanceRequ
    * }
    */
    
-  console.log("Obteniendo datos de rendimiento (simulado) para:", { consultants, clients, fromDate, toDate });
+  console.log("Simulando obtención de datos de rendimiento para:", { consultants, clients, from, to, reportType });
 
-  // Devolvemos datos vacíos para que la aplicación no se rompa.
-  // Aquí es donde procesarías la respuesta de tu API.
+  // Devolvemos datos vacíos para que la aplicación no se rompa mientras no hay API.
   return {
     tableData: [],
     chartData: [],
