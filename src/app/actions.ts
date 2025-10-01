@@ -60,6 +60,9 @@ export async function getConsultants() {
       { co_usuario: 'c.arruda', no_usuario: 'Carlos Arruda' },
       { co_usuario: 'c.viana', no_usuario: 'Carlos Viana' },
       { co_usuario: 'a.Azevedo', no_usuario: 'Aline de Azevedo' },
+      { co_usuario: 'a.chiodaro', no_usuario: 'Ana Chiodaro' },
+      { co_usuario: 'c.carvalho', no_usuario: 'Carlos Henrique de Carvalho' },
+      { co_usuario: 'renato', no_usuario: 'Renato' },
     ];
 }
 
